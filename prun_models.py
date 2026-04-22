@@ -1,7 +1,5 @@
 import os
 import torch
-import torch.nn as nn
-import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 
@@ -33,6 +31,20 @@ original_models_cifar = {
     "VGG-16": VGG16()
 }
 
+
+def evaluate_accuracy(model, data_loader, device):
+    model.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for inputs, targets in data_loader:
+            inputs, targets = inputs.to(device), targets.to(device)
+            outputs = model(inputs)
+            _, predicted = torch.max(outputs.data, 1)
+            total += targets.size(0)
+            correct += (predicted == targets).sum().item()
+    return 100 * correct / total if total > 0 else 0.0
+
 # General Pruning Config 
 # Here we use magnitude-based unstructured pruning as an example
 prune_config = WeightPruningConfig(
@@ -48,9 +60,7 @@ final_pruning_accuracies = {}
 
 print("\n--- Processing MNIST Pruning ---")
 transform_mnist = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
-mnist_train_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform_mnist)
 mnist_test_dataset = datasets.MNIST(root='./data', train=False, download=True, transform=transform_mnist)
-mnist_train_loader = DataLoader(mnist_train_dataset, batch_size=64, shuffle=True)
 mnist_test_loader = DataLoader(mnist_test_dataset, batch_size=1000, shuffle=False)
 
 for model_name, model in original_models_mnist.items():
@@ -75,18 +85,7 @@ for model_name, model in original_models_mnist.items():
     pruned_model = compression_manager.model
     
     # Evaluate pruned model
-    pruned_model.eval()
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for data, target in mnist_test_loader:
-            data, target = data.to(device), target.to(device)
-            outputs = pruned_model(data)
-            _, predicted = torch.max(outputs.data, 1)
-            total += target.size(0)
-            correct += (predicted == target).sum().item()
-            
-    accuracy = 100 * correct / total
+    accuracy = evaluate_accuracy(pruned_model, mnist_test_loader, device)
     final_pruning_accuracies[f"{model_name}_prun"] = accuracy
     print(f"Pruned Model Accuracy of {model_name} on test set: {accuracy:.2f}%")
     
@@ -98,13 +97,11 @@ for model_name, model in original_models_mnist.items():
 # CIFAR-10 Pruning
 # ====================================================================
 print("\n--- Processing CIFAR-10 Pruning ---")
-transform_cifar = transforms.Compose([
+transform_cifar_eval = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
-cifar_train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_cifar)
-cifar_test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_cifar)
-cifar_train_loader = DataLoader(cifar_train_dataset, batch_size=128, shuffle=True)
+cifar_test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_cifar_eval)
 cifar_test_loader = DataLoader(cifar_test_dataset, batch_size=100, shuffle=False)
 
 for model_name, model in original_models_cifar.items():
@@ -129,18 +126,7 @@ for model_name, model in original_models_cifar.items():
     pruned_model = compression_manager.model
     
     # Evaluate pruned model
-    pruned_model.eval()
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for inputs, targets in cifar_test_loader:
-            inputs, targets = inputs.to(device), targets.to(device)
-            outputs = pruned_model(inputs)
-            _, predicted = torch.max(outputs.data, 1)
-            total += targets.size(0)
-            correct += (predicted == targets).sum().item()
-            
-    accuracy = 100 * correct / total
+    accuracy = evaluate_accuracy(pruned_model, cifar_test_loader, device)
     final_pruning_accuracies[f"{model_name}_prun"] = accuracy
     print(f"Pruned Model Accuracy of {model_name} on test set: {accuracy:.2f}%")
     

@@ -1,8 +1,7 @@
 import os
 import torch
-import torch.nn as nn
 from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 
 from neural_compressor.config import PostTrainingQuantConfig
 try:
@@ -33,6 +32,32 @@ original_models_cifar = {
     "VGG-16": VGG16()
 }
 
+CALIB_RATIO = 0.1
+CALIB_BATCH_SIZE = 64
+CALIB_SEED = 42
+
+
+def evaluate_accuracy(model, data_loader, device):
+    model.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for inputs, targets in data_loader:
+            inputs, targets = inputs.to(device), targets.to(device)
+            outputs = model(inputs)
+            _, predicted = torch.max(outputs.data, 1)
+            total += targets.size(0)
+            correct += (predicted == targets).sum().item()
+    return 100 * correct / total if total > 0 else 0.0
+
+
+def build_calibration_loader(train_dataset, batch_size, ratio=CALIB_RATIO, seed=CALIB_SEED):
+    calib_size = max(1, int(len(train_dataset) * ratio))
+    remain_size = len(train_dataset) - calib_size
+    generator = torch.Generator().manual_seed(seed)
+    calib_subset, _ = random_split(train_dataset, [calib_size, remain_size], generator=generator)
+    return DataLoader(calib_subset, batch_size=batch_size, shuffle=False)
+
 # ====================================================================
 # MNIST Quantization
 # ====================================================================
@@ -40,10 +65,11 @@ final_quant_accuracies = {}
 
 print("\n--- Processing MNIST Quantization ---")
 transform_mnist = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+mnist_train_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform_mnist)
 mnist_test_dataset = datasets.MNIST(root='./data', train=False, download=True, transform=transform_mnist)
-# A small batch size for calibration
-mnist_calib_loader = DataLoader(mnist_test_dataset, batch_size=64, shuffle=False)
+mnist_calib_loader = build_calibration_loader(mnist_train_dataset, batch_size=CALIB_BATCH_SIZE)
 mnist_eval_loader = DataLoader(mnist_test_dataset, batch_size=1000, shuffle=False)
+print(f"MNIST calibration samples: {len(mnist_calib_loader.dataset)} (from train set)")
 
 conf = PostTrainingQuantConfig()
 
@@ -72,18 +98,7 @@ for model_name, model in original_models_mnist.items():
 
     # Evaluate quantized model
     q_model_pytorch = q_model.model
-    q_model_pytorch.eval()
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for data, target in mnist_eval_loader:
-            data, target = data.to(device), target.to(device)
-            outputs = q_model_pytorch(data)
-            _, predicted = torch.max(outputs.data, 1)
-            total += target.size(0)
-            correct += (predicted == target).sum().item()
-            
-    accuracy = 100 * correct / total
+    accuracy = evaluate_accuracy(q_model_pytorch, mnist_eval_loader, device)
     final_quant_accuracies[f"{model_name}_quan"] = accuracy
     print(f"Quantized Model Accuracy of {model_name} on test set: {accuracy:.2f}%")
 
@@ -91,13 +106,15 @@ for model_name, model in original_models_mnist.items():
 # CIFAR-10 Quantization
 # ====================================================================
 print("\n--- Processing CIFAR-10 Quantization ---")
-transform_cifar = transforms.Compose([
+transform_cifar_eval = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
-cifar_test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_cifar)
-cifar_calib_loader = DataLoader(cifar_test_dataset, batch_size=64, shuffle=False)
+cifar_train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_cifar_eval)
+cifar_test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_cifar_eval)
+cifar_calib_loader = build_calibration_loader(cifar_train_dataset, batch_size=CALIB_BATCH_SIZE)
 cifar_eval_loader = DataLoader(cifar_test_dataset, batch_size=100, shuffle=False)
+print(f"CIFAR-10 calibration samples: {len(cifar_calib_loader.dataset)} (from train set)")
 
 for model_name, model in original_models_cifar.items():
     saved_name = model_name.lower().replace("-", "")
@@ -124,18 +141,7 @@ for model_name, model in original_models_cifar.items():
 
     # Evaluate quantized model
     q_model_pytorch = q_model.model
-    q_model_pytorch.eval()
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for inputs, targets in cifar_eval_loader:
-            inputs, targets = inputs.to(device), targets.to(device)
-            outputs = q_model_pytorch(inputs)
-            _, predicted = torch.max(outputs.data, 1)
-            total += targets.size(0)
-            correct += (predicted == targets).sum().item()
-            
-    accuracy = 100 * correct / total
+    accuracy = evaluate_accuracy(q_model_pytorch, cifar_eval_loader, device)
     final_quant_accuracies[f"{model_name}_quan"] = accuracy
     print(f"Quantized Model Accuracy of {model_name} on test set: {accuracy:.2f}%")
 
