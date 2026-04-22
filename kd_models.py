@@ -141,9 +141,9 @@ for t_name, (teacher, student, d) in kd_pairs_cifar.items():
     teacher.to(device)
     teacher.eval() # Frozen
     
-    # 针对较小的学生模型做超参设置
+
     student.to(device)
-    # 对于 CIFAR-10 我们同样使用较多 epoch 进行训练，比如对于 ResNet8 和 PlainNet8 使用学习率0.1训练。
+
     if t_name in ["PlainNet-20", "ResNet-20"]:
         lr = 0.1
         num_epochs = 10
@@ -195,7 +195,7 @@ for t_name, (teacher, student, d) in kd_pairs_cifar.items():
 
 
 print("\n" + "="*50)
-print("FINAL KNOWLEDGE DISTILLATION (STUDENT) ACCURACIES")
+print("KNOWLEDGE DISTILLATION (STUDENT) ACCURACIES")
 print("="*50)
 for kd_name, acc in final_kd_accuracies.items():
     print(f"{kd_name:<15}: {acc:.2f}%")

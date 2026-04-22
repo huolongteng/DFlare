@@ -7,10 +7,10 @@ from torch.utils.data import DataLoader
 
 from neural_compressor.config import WeightPruningConfig
 try:
-    # สำหรับ Neural Compressor 2.0 及更高版本的 API
+
     from neural_compressor.training import prepare_compression
 except ImportError:
-    # 兼容老版本 API
+
     from neural_compressor.training import prepare_pruning as prepare_compression
 
 from model_definitions import SimpleCNN, LeNet4, LeNet5, PlainNet20, ResNet20, VGG16
@@ -64,7 +64,6 @@ for model_name, model in original_models_mnist.items():
     model.to(device)
     compression_manager = prepare_compression(model, prune_config)
     
-    # 模拟一次训练过程来让剪枝生效
     compression_manager.callbacks.on_train_begin()
     compression_manager.callbacks.on_epoch_begin(0)
     compression_manager.callbacks.on_step_begin(0)
@@ -149,7 +148,7 @@ for model_name, model in original_models_cifar.items():
     print(f"Saved pruned model to {save_path}")
 
 print("\n" + "="*50)
-print("FINAL PRUNED MODEL ACCURACIES")
+print("PRUNED MODEL ACCURACIES")
 print("="*50)
 for model_name, acc in final_pruning_accuracies.items():
     print(f"{model_name:<15}: {acc:.2f}%")

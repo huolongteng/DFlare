@@ -1,16 +1,11 @@
-
 import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
-
-# Import model definitions from the previously created file
 from model_definitions import SimpleCNN, LeNet4, LeNet5, PlainNet20, ResNet20, VGG16
 
-print("Step 1: Create directories for models.")
-# Create base directory
 base_dir = 'models_'
 if not os.path.exists(base_dir):
     os.makedirs(base_dir)
@@ -27,14 +22,14 @@ print("-" * 50)
 
 # --- Device Configuration ---
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Step 2: Set device to '{device}'.")
+print(f"Set device to '{device}'.")
 print("-" * 50)
 
 # Dictionary to collect all final accuracies
 final_accuracies = {}
 
 # --- MNIST Models Training and Evaluation ---
-print("Step 3: Handle MNIST models (SimpleCNN, LeNet-4, LeNet-5).")
+print("Handling MNIST models (SimpleCNN, LeNet-4, LeNet-5).")
 
 # Data loading
 print("Loading MNIST dataset...")
@@ -59,8 +54,8 @@ for model_name, model in mnist_models_to_train.items():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     
-    # Simple training loop
-    num_epochs = 3 # Using fewer epochs for a quick run
+    # Training loop
+    num_epochs = 3 
     model.train()
     for epoch in range(num_epochs):
         for batch_idx, (data, target) in enumerate(mnist_train_loader):
@@ -97,7 +92,7 @@ for model_name, model in mnist_models_to_train.items():
 print("-" * 50)
 
 # --- CIFAR-10 Models Training and Evaluation ---
-print("Step 4: Handle CIFAR-10 models (PlainNet-20, ResNet-20, VGG-16).")
+print("Handling CIFAR-10 models (PlainNet-20, ResNet-20, VGG-16).")
 
 # Data loading
 print("Loading CIFAR-10 dataset...")
@@ -126,7 +121,7 @@ for model_name, model in cifar_models_to_train.items():
     model.to(device)
     criterion = nn.CrossEntropyLoss()
     
-    # 针对 PlainNet-20 和 ResNet-20 提升超参数 (增加 epoch，使用更大的初始学习率 0.1)
+    
     if model_name in ["PlainNet-20", "ResNet-20"]:
         lr = 0.1
         num_epochs = 100
@@ -137,7 +132,7 @@ for model_name, model in cifar_models_to_train.items():
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
 
-    # Simple training loop
+    # Training loop
     model.train()
     for epoch in range(num_epochs):
         for batch_idx, (inputs, targets) in enumerate(cifar_train_loader):
@@ -174,10 +169,10 @@ for model_name, model in cifar_models_to_train.items():
 
 
 print("\n" + "="*50)
-print("FINAL MODEL ACCURACIES SUMMARY")
+print("MODEL ACCURACIES SUMMARY")
 print("="*50)
 for model_name, acc in final_accuracies.items():
     print(f"{model_name:<15}: {acc:.2f}%")
 print("="*50)
 print("-" * 50)
-print("Step 5: All models have been trained, evaluated, and saved.")
+print("All models have been trained, evaluated, and saved.")

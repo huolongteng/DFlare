@@ -110,7 +110,7 @@ for model_name, model in original_models_cifar.items():
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
     
-    # Perform Post-Training Quantization (PTQ)
+    # Perform Post-Training Quantization
     q_model = fit_func(model=model, conf=conf, calib_dataloader=cifar_calib_loader, eval_func=lambda m: 1.0)
     
     if q_model is None:
@@ -140,7 +140,7 @@ for model_name, model in original_models_cifar.items():
     print(f"Quantized Model Accuracy of {model_name} on test set: {accuracy:.2f}%")
 
 print("\n" + "="*50)
-print("FINAL QUANTIZED MODEL ACCURACIES")
+print("QUANTIZED MODEL ACCURACIES")
 print("="*50)
 for model_name, acc in final_quant_accuracies.items():
     print(f"{model_name:<15}: {acc:.2f}%")
