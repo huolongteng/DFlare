@@ -170,8 +170,9 @@ class PlainNet(nn.Module):
 def PlainNet20():
     return PlainNet(PlainBlock, [3, 3, 3])
 
-# VGG-16 for CIFAR-10
+# VGG for CIFAR-10
 cfg = {
+    'VGG11': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
     'VGG16': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
 }
 
@@ -202,4 +203,68 @@ class VGG(nn.Module):
         return nn.Sequential(*layers)
 
 def VGG16():
+    return VGG('VGG16')
+
+def VGG11():
+    return VGG('VGG11')
+
+# =====================================================================
+# Student Models for Knowledge Distillation
+# =====================================================================
+
+class SimpleCNN_Half(nn.Module):
+    def __init__(self):
+        super(SimpleCNN_Half, self).__init__()
+        self.conv1 = nn.Conv2d(1, 16, kernel_size=5)
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=5)
+        self.pool = nn.MaxPool2d(2)
+        self.fc1 = nn.Linear(512, 10) # 32 * 4 * 4 = 512
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = x.view(-1, 512)
+        x = self.fc1(x)
+        return x
+
+class LeNet5_Half(nn.Module):
+    def __init__(self):
+        super(LeNet5_Half, self).__init__()
+        self.conv1 = nn.Conv2d(1, 3, kernel_size=5, padding=2)
+        self.conv2 = nn.Conv2d(3, 8, kernel_size=5)
+        self.pool = nn.AvgPool2d(2)
+        self.fc1 = nn.Linear(8 * 5 * 5, 60)
+        self.fc2 = nn.Linear(60, 42)
+        self.fc3 = nn.Linear(42, 10)
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = x.view(-1, 8 * 5 * 5)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
+class LeNet4_Half(nn.Module):
+    def __init__(self):
+        super(LeNet4_Half, self).__init__()
+        self.conv1 = nn.Conv2d(1, 2, kernel_size=5)
+        self.pool = nn.MaxPool2d(2)
+        self.conv2 = nn.Conv2d(2, 6, kernel_size=5)
+        self.fc1 = nn.Linear(6 * 4 * 4, 10)
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = x.view(-1, 6 * 4 * 4)
+        x = self.fc1(x)
+        return x
+
+def ResNet8():
+    # Only 1 block per layer instead of 3
+    return ResNet(BasicBlock, [1, 1, 1])
+
+def PlainNet8():
+    # Only 1 block per layer instead of 3inBlock, [1, 1, 1])
     return VGG('VGG16')
