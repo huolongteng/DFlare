@@ -33,6 +33,47 @@ original_models_cifar = {
     "VGG-16": VGG16()
 }
 
+
+def evaluate_model(model, dataloader, device):
+    model.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for inputs, targets in dataloader:
+            inputs, targets = inputs.to(device), targets.to(device)
+            outputs = model(inputs)
+            _, predicted = torch.max(outputs.data, 1)
+            total += targets.size(0)
+            correct += (predicted == targets).sum().item()
+    return 100 * correct / total if total > 0 else 0.0
+
+
+def apply_pruning_with_train_subset(model, compression_manager, train_loader, device, max_steps=100):
+    """Run a short train-subset pass to make pruning masks effective."""
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(model.parameters(), lr=1e-3, momentum=0.9)
+
+    model.train()
+    compression_manager.callbacks.on_train_begin()
+    compression_manager.callbacks.on_epoch_begin(0)
+
+    step = 0
+    for inputs, targets in train_loader:
+        if step >= max_steps:
+            break
+        inputs, targets = inputs.to(device), targets.to(device)
+        compression_manager.callbacks.on_step_begin(step)
+        optimizer.zero_grad()
+        outputs = model(inputs)
+        loss = criterion(outputs, targets)
+        loss.backward()
+        optimizer.step()
+        compression_manager.callbacks.on_step_end()
+        step += 1
+
+    compression_manager.callbacks.on_epoch_end()
+    compression_manager.callbacks.on_train_end()
+
 # General Pruning Config 
 # Here we use magnitude-based unstructured pruning as an example
 prune_config = WeightPruningConfig(
@@ -63,30 +104,12 @@ for model_name, model in original_models_mnist.items():
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.to(device)
     compression_manager = prepare_compression(model, prune_config)
-    
-    # 模拟一次训练过程来让剪枝生效
-    compression_manager.callbacks.on_train_begin()
-    compression_manager.callbacks.on_epoch_begin(0)
-    compression_manager.callbacks.on_step_begin(0)
-    compression_manager.callbacks.on_step_end()
-    compression_manager.callbacks.on_epoch_end()
-    compression_manager.callbacks.on_train_end()
+    apply_pruning_with_train_subset(model, compression_manager, mnist_train_loader, device)
     
     pruned_model = compression_manager.model
     
     # Evaluate pruned model
-    pruned_model.eval()
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for data, target in mnist_test_loader:
-            data, target = data.to(device), target.to(device)
-            outputs = pruned_model(data)
-            _, predicted = torch.max(outputs.data, 1)
-            total += target.size(0)
-            correct += (predicted == target).sum().item()
-            
-    accuracy = 100 * correct / total
+    accuracy = evaluate_model(pruned_model, mnist_test_loader, device)
     final_pruning_accuracies[f"{model_name}_prun"] = accuracy
     print(f"Pruned Model Accuracy of {model_name} on test set: {accuracy:.2f}%")
     
@@ -118,29 +141,12 @@ for model_name, model in original_models_cifar.items():
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.to(device)
     compression_manager = prepare_compression(model, prune_config)
-    
-    compression_manager.callbacks.on_train_begin()
-    compression_manager.callbacks.on_epoch_begin(0)
-    compression_manager.callbacks.on_step_begin(0)
-    compression_manager.callbacks.on_step_end()
-    compression_manager.callbacks.on_epoch_end()
-    compression_manager.callbacks.on_train_end()
+    apply_pruning_with_train_subset(model, compression_manager, cifar_train_loader, device)
     
     pruned_model = compression_manager.model
     
     # Evaluate pruned model
-    pruned_model.eval()
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for inputs, targets in cifar_test_loader:
-            inputs, targets = inputs.to(device), targets.to(device)
-            outputs = pruned_model(inputs)
-            _, predicted = torch.max(outputs.data, 1)
-            total += targets.size(0)
-            correct += (predicted == targets).sum().item()
-            
-    accuracy = 100 * correct / total
+    accuracy = evaluate_model(pruned_model, cifar_test_loader, device)
     final_pruning_accuracies[f"{model_name}_prun"] = accuracy
     print(f"Pruned Model Accuracy of {model_name} on test set: {accuracy:.2f}%")
     
