@@ -84,9 +84,9 @@ for model_name, model in mnist_models_to_train.items():
             _, predicted = torch.max(outputs.data, 1)
             total += target.size(0)
             correct += (predicted == target).sum().item()
-    final_accuracies[model_name] = accuracy
-    
+            
     accuracy = 100 * correct / total
+    final_accuracies[model_name] = accuracy
     print(f"Accuracy of {model_name} on the test set: {accuracy:.2f}%")
 
     # Save the model
