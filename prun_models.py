@@ -6,7 +6,12 @@ from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 
 from neural_compressor.config import WeightPruningConfig
-from neural_compressor.training import prepare_pruning, WeightPruning
+try:
+    # สำหรับ Neural Compressor 2.0 及更高版本的 API
+    from neural_compressor.training import prepare_compression
+except ImportError:
+    # 兼容老版本 API
+    from neural_compressor.training import prepare_pruning as prepare_compression
 
 from model_definitions import SimpleCNN, LeNet4, LeNet5, PlainNet20, ResNet20, VGG16
 
@@ -50,16 +55,17 @@ for model_name, model in original_models_mnist.items():
         print(f"Original model {model_name} not found at {model_path}. Skipping.")
         continue
         
-    print(f"\nPruning {model_name} -> {model_name}_prun ...")
-    model.load_state_dict(torch.load(model_path, map_location=device))
-    model.to(device)
+    compression_manager = prepare_compression(model, prune_config)
     
-    # Initialize Pruning object
-    pruning = WeightPruning(prune_config)
-    pruning.model = model
+    # 模拟一次训练过程来让剪枝生效
+    compression_manager.callbacks.on_train_begin()
+    compression_manager.callbacks.on_epoch_begin(0)
+    compression_manager.callbacks.on_step_begin(0)
+    compression_manager.callbacks.on_step_end()
+    compression_manager.callbacks.on_epoch_end()
+    compression_manager.callbacks.on_train_end()
     
-    # For magnitude pruning we normally just need to run pruning setup 
-    pruning.pre_epoch_begin()
+    pruned_model = compression_managern()
     pruning.on_step_begin(0)
     pruning.on_step_end()
     pruning.on_epoch_end()
@@ -91,15 +97,16 @@ for model_name, model in original_models_cifar.items():
     print(f"\nPruning {model_name} -> {model_name}_prun ...")
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.to(device)
+    compression_manager = prepare_compression(model, prune_config)
     
-    pruning = WeightPruning(prune_config)
-    pruning.model = model
+    compression_manager.callbacks.on_train_begin()
+    compression_manager.callbacks.on_epoch_begin(0)
+    compression_manager.callbacks.on_step_begin(0)
+    compression_manager.callbacks.on_step_end()
+    compression_manager.callbacks.on_epoch_end()
+    compression_manager.callbacks.on_train_end()
     
-    pruning.pre_epoch_begin()
-    pruning.on_step_begin(0)
-    pruning.on_step_end()
-    pruning.on_epoch_end()
-    
+    pruned_model = compression_manager
     pruned_model = pruning.model
     
     save_path = os.path.join(cifar_dir, f'{saved_name}_prun.pth')

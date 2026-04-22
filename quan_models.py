@@ -5,7 +5,11 @@ from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 
 from neural_compressor.config import PostTrainingQuantConfig
-from neural_compressor.quantization import fit
+try:
+    from neural_compressor import quantization
+    fit_func = quantization.fit
+except ImportError:
+    from neural_compressor.quantization import fit as fit_func
 
 from model_definitions import SimpleCNN, LeNet4, LeNet5, PlainNet20, ResNet20, VGG16
 
@@ -47,7 +51,7 @@ for model_name, model in original_models_mnist.items():
         continue
         
     print(f"\nQuantizing {model_name} -> {model_name}_quan ...")
-    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.load_st_funcate_dict(torch.load(model_path, map_location=device))
     model.eval()
     
     # Perform Post-Training Quantization (PTQ)
@@ -83,7 +87,7 @@ for model_name, model in original_models_cifar.items():
     model.eval()
     
     # Perform Post-Training Quantization (PTQ)
-    q_model = fit(model=model, conf=conf, calib_dataloader=cifar_calib_loader)
+    q_model = fit_func(model=model, conf=conf, calib_dataloader=cifar_calib_loader)
     
     # Save the quantized model
     save_path = os.path.join(cifar_dir, f'{saved_name}_quan')
