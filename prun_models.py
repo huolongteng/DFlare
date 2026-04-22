@@ -65,12 +65,7 @@ for model_name, model in original_models_mnist.items():
     compression_manager.callbacks.on_epoch_end()
     compression_manager.callbacks.on_train_end()
     
-    pruned_model = compression_managern()
-    pruning.on_step_begin(0)
-    pruning.on_step_end()
-    pruning.on_epoch_end()
-    
-    pruned_model = pruning.model
+    pruned_model = compression_manager.model
     
     save_path = os.path.join(mnist_dir, f'{model_name.lower()}_prun.pth')
     torch.save(pruned_model.state_dict(), save_path)
@@ -106,8 +101,7 @@ for model_name, model in original_models_cifar.items():
     compression_manager.callbacks.on_epoch_end()
     compression_manager.callbacks.on_train_end()
     
-    pruned_model = compression_manager
-    pruned_model = pruning.model
+    pruned_model = compression_manager.model
     
     save_path = os.path.join(cifar_dir, f'{saved_name}_prun.pth')
     torch.save(pruned_model.state_dict(), save_path)

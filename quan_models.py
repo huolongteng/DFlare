@@ -51,11 +51,11 @@ for model_name, model in original_models_mnist.items():
         continue
         
     print(f"\nQuantizing {model_name} -> {model_name}_quan ...")
-    model.load_st_funcate_dict(torch.load(model_path, map_location=device))
+    model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
     
     # Perform Post-Training Quantization (PTQ)
-    q_model = fit(model=model, conf=conf, calib_dataloader=mnist_calib_loader)
+    q_model = fit_func(model=model, conf=conf, calib_dataloader=mnist_calib_loader)
     
     # Save the quantized model
     save_path = os.path.join(mnist_dir, f'{model_name.lower()}_quan')
