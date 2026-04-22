@@ -4,3 +4,5 @@ __pycache__/
 *.pyo
 
 data/
+models_/
+nc_workspace/

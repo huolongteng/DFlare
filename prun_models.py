@@ -38,16 +38,20 @@ original_models_cifar = {
 prune_config = WeightPruningConfig(
     pruning_type="magnitude",
     target_sparsity=0.5, # 50% sparsity
-    pattern="4x1"
+    pattern="1x1"
 )
 
 # ====================================================================
 # MNIST Pruning
 # ====================================================================
+final_pruning_accuracies = {}
+
 print("\n--- Processing MNIST Pruning ---")
 transform_mnist = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
 mnist_train_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform_mnist)
+mnist_test_dataset = datasets.MNIST(root='./data', train=False, download=True, transform=transform_mnist)
 mnist_train_loader = DataLoader(mnist_train_dataset, batch_size=64, shuffle=True)
+mnist_test_loader = DataLoader(mnist_test_dataset, batch_size=1000, shuffle=False)
 
 for model_name, model in original_models_mnist.items():
     model_path = os.path.join(mnist_dir, f'{model_name.lower()}.pth')
@@ -55,6 +59,9 @@ for model_name, model in original_models_mnist.items():
         print(f"Original model {model_name} not found at {model_path}. Skipping.")
         continue
         
+    print(f"\nPruning {model_name} -> {model_name}_prun ...")
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.to(device)
     compression_manager = prepare_compression(model, prune_config)
     
     # 模拟一次训练过程来让剪枝生效
@@ -66,6 +73,22 @@ for model_name, model in original_models_mnist.items():
     compression_manager.callbacks.on_train_end()
     
     pruned_model = compression_manager.model
+    
+    # Evaluate pruned model
+    pruned_model.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for data, target in mnist_test_loader:
+            data, target = data.to(device), target.to(device)
+            outputs = pruned_model(data)
+            _, predicted = torch.max(outputs.data, 1)
+            total += target.size(0)
+            correct += (predicted == target).sum().item()
+            
+    accuracy = 100 * correct / total
+    final_pruning_accuracies[f"{model_name}_prun"] = accuracy
+    print(f"Pruned Model Accuracy of {model_name} on test set: {accuracy:.2f}%")
     
     save_path = os.path.join(mnist_dir, f'{model_name.lower()}_prun.pth')
     torch.save(pruned_model.state_dict(), save_path)
@@ -80,7 +103,9 @@ transform_cifar = transforms.Compose([
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
 cifar_train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_cifar)
+cifar_test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_cifar)
 cifar_train_loader = DataLoader(cifar_train_dataset, batch_size=128, shuffle=True)
+cifar_test_loader = DataLoader(cifar_test_dataset, batch_size=100, shuffle=False)
 
 for model_name, model in original_models_cifar.items():
     saved_name = model_name.lower().replace("-", "")
@@ -103,10 +128,31 @@ for model_name, model in original_models_cifar.items():
     
     pruned_model = compression_manager.model
     
+    # Evaluate pruned model
+    pruned_model.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for inputs, targets in cifar_test_loader:
+            inputs, targets = inputs.to(device), targets.to(device)
+            outputs = pruned_model(inputs)
+            _, predicted = torch.max(outputs.data, 1)
+            total += targets.size(0)
+            correct += (predicted == targets).sum().item()
+            
+    accuracy = 100 * correct / total
+    final_pruning_accuracies[f"{model_name}_prun"] = accuracy
+    print(f"Pruned Model Accuracy of {model_name} on test set: {accuracy:.2f}%")
+    
     save_path = os.path.join(cifar_dir, f'{saved_name}_prun.pth')
     torch.save(pruned_model.state_dict(), save_path)
     print(f"Saved pruned model to {save_path}")
 
 print("\n" + "="*50)
+print("FINAL PRUNED MODEL ACCURACIES")
+print("="*50)
+for model_name, acc in final_pruning_accuracies.items():
+    print(f"{model_name:<15}: {acc:.2f}%")
+print("="*50)
 print("Pruning process completed using Neural Compressor.")
 print("="*50)

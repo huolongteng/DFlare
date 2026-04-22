@@ -13,7 +13,7 @@ class SimpleCNN(nn.Module):
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 1024)
+        x = x.reshape(-1, 1024)
         x = self.fc1(x)
         return x
 
@@ -31,7 +31,7 @@ class LeNet5(nn.Module):
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 16 * 5 * 5)
+        x = x.reshape(-1, 16 * 5 * 5)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
@@ -49,7 +49,7 @@ class LeNet4(nn.Module):
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 12 * 4 * 4)
+        x = x.reshape(-1, 12 * 4 * 4)
         x = self.fc1(x)
         return x
 
@@ -116,7 +116,7 @@ class ResNet(nn.Module):
         out = self.layer2(out)
         out = self.layer3(out)
         out = F.avg_pool2d(out, out.size()[3])
-        out = out.view(out.size(0), -1)
+        out = out.reshape(out.size(0), -1)
         out = self.linear(out)
         return out
 
@@ -163,7 +163,7 @@ class PlainNet(nn.Module):
         out = self.layer2(out)
         out = self.layer3(out)
         out = F.avg_pool2d(out, 8)
-        out = out.view(out.size(0), -1)
+        out = out.reshape(out.size(0), -1)
         out = self.linear(out)
         return out
 
@@ -184,7 +184,7 @@ class VGG(nn.Module):
 
     def forward(self, x):
         out = self.features(x)
-        out = out.view(out.size(0), -1)
+        out = out.reshape(out.size(0), -1)
         out = self.classifier(out)
         return out
 
