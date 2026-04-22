@@ -1,8 +1,7 @@
 import os
 import torch
-import torch.nn as nn
 from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 
 from neural_compressor.config import PostTrainingQuantConfig
 try:
@@ -33,6 +32,16 @@ original_models_cifar = {
     "VGG-16": VGG16()
 }
 
+
+def build_calibration_loader(train_dataset, subset_size=1024, batch_size=64, seed=42):
+    """
+    Build a deterministic calibration loader from a training-set subset to avoid test-set leakage.
+    """
+    generator = torch.Generator().manual_seed(seed)
+    indices = torch.randperm(len(train_dataset), generator=generator)[:subset_size].tolist()
+    calib_subset = Subset(train_dataset, indices)
+    return DataLoader(calib_subset, batch_size=batch_size, shuffle=False)
+
 # ====================================================================
 # MNIST Quantization
 # ====================================================================
@@ -40,9 +49,10 @@ final_quant_accuracies = {}
 
 print("\n--- Processing MNIST Quantization ---")
 transform_mnist = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+mnist_train_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform_mnist)
 mnist_test_dataset = datasets.MNIST(root='./data', train=False, download=True, transform=transform_mnist)
-# A small batch size for calibration
-mnist_calib_loader = DataLoader(mnist_test_dataset, batch_size=64, shuffle=False)
+# Calibrate only on a subset of training data; evaluate only on test data.
+mnist_calib_loader = build_calibration_loader(mnist_train_dataset, subset_size=1024, batch_size=64, seed=42)
 mnist_eval_loader = DataLoader(mnist_test_dataset, batch_size=1000, shuffle=False)
 
 conf = PostTrainingQuantConfig()
@@ -95,8 +105,9 @@ transform_cifar = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
+cifar_train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_cifar)
 cifar_test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_cifar)
-cifar_calib_loader = DataLoader(cifar_test_dataset, batch_size=64, shuffle=False)
+cifar_calib_loader = build_calibration_loader(cifar_train_dataset, subset_size=1024, batch_size=64, seed=42)
 cifar_eval_loader = DataLoader(cifar_test_dataset, batch_size=100, shuffle=False)
 
 for model_name, model in original_models_cifar.items():
