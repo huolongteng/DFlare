@@ -146,7 +146,7 @@ for t_name, (teacher, student, d) in kd_pairs_cifar.items():
     # 对于 CIFAR-10 我们同样使用较多 epoch 进行训练，比如对于 ResNet8 和 PlainNet8 使用学习率0.1训练。
     if t_name in ["PlainNet-20", "ResNet-20"]:
         lr = 0.1
-        num_epochs = 100
+        num_epochs = 10
     else:
         lr = 0.01
         num_epochs = 10
