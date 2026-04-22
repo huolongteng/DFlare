@@ -175,4 +175,5 @@ for model_name, acc in final_accuracies.items():
     print(f"{model_name:<15}: {acc:.2f}%")
 print("="*50)
 print("-" * 50)
-print("All models have been trained, evaluated, and saved.")
+print("All models have been saved.")
+
