@@ -30,6 +30,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Step 2: Set device to '{device}'.")
 print("-" * 50)
 
+# Dictionary to collect all final accuracies
+final_accuracies = {}
+
 # --- MNIST Models Training and Evaluation ---
 print("Step 3: Handle MNIST models (SimpleCNN, LeNet-4, LeNet-5).")
 
@@ -81,6 +84,7 @@ for model_name, model in mnist_models_to_train.items():
             _, predicted = torch.max(outputs.data, 1)
             total += target.size(0)
             correct += (predicted == target).sum().item()
+    final_accuracies[model_name] = accuracy
     
     accuracy = 100 * correct / total
     print(f"Accuracy of {model_name} on the test set: {accuracy:.2f}%")
@@ -121,11 +125,19 @@ for model_name, model in cifar_models_to_train.items():
     print(f"\n--- Training {model_name} on CIFAR-10 ---")
     model.to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
+    
+    # 针对 PlainNet-20 和 ResNet-20 提升超参数 (增加 epoch，使用更大的初始学习率 0.1)
+    if model_name in ["PlainNet-20", "ResNet-20"]:
+        lr = 0.1
+        num_epochs = 100
+    else:
+        lr = 0.01
+        num_epochs = 10
+        
+    optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
 
     # Simple training loop
-    num_epochs = 10 # Using fewer epochs for a quick run. For full accuracy, this should be ~200.
     model.train()
     for epoch in range(num_epochs):
         for batch_idx, (inputs, targets) in enumerate(cifar_train_loader):
@@ -152,6 +164,7 @@ for model_name, model in cifar_models_to_train.items():
             correct += (predicted == targets).sum().item()
 
     accuracy = 100 * correct / total
+    final_accuracies[model_name] = accuracy
     print(f"Accuracy of {model_name} on the test set: {accuracy:.2f}%")
 
     # Save the model
@@ -159,5 +172,12 @@ for model_name, model in cifar_models_to_train.items():
     torch.save(model.state_dict(), model_path)
     print(f"Model {model_name} saved to {model_path}")
 
+
+print("\n" + "="*50)
+print("FINAL MODEL ACCURACIES SUMMARY")
+print("="*50)
+for model_name, acc in final_accuracies.items():
+    print(f"{model_name:<15}: {acc:.2f}%")
+print("="*50)
 print("-" * 50)
 print("Step 5: All models have been trained, evaluated, and saved.")
