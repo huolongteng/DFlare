@@ -83,23 +83,23 @@ def load_named_model(model_name, model_paths, model_factories):
     return model
 
 
-def model_pair_predict(org_model, dataloader, cps_model):
-    org_model.to(device)
-    cps_model.to(device)
-    org_model.eval()
-    cps_model.eval()
-    diff = 0
+# def model_pair_predict(org_model, dataloader, cps_model):
+#     org_model.to(device)
+#     cps_model.to(device)
+#     org_model.eval()
+#     cps_model.eval()
+#     diff = 0
     
-    with torch.no_grad():
-        for data, target in dataloader:
-            data, target = data.to(device), target.to(device)
-            org_outputs = org_model(data)
-            cps_outputs = cps_model(data)
-            _, org_predicted = torch.max(org_outputs.data, 1)
-            _, cps_predicted = torch.max(cps_outputs.data, 1)
-            diff += (org_predicted != cps_predicted).sum().item()
+#     with torch.no_grad():
+#         for data, target in dataloader:
+#             data, target = data.to(device), target.to(device)
+#             org_outputs = org_model(data)
+#             cps_outputs = cps_model(data)
+#             _, org_predicted = torch.max(org_outputs.data, 1)
+#             _, cps_predicted = torch.max(cps_outputs.data, 1)
+#             diff += (org_predicted != cps_predicted).sum().item()
     
-    return diff
+#     return diff
     
 mnist_kd_pairs = [
     ("SimpleCNN", "SimpleCNN_kd"),
@@ -112,16 +112,131 @@ seed_indices = random.sample(range(len(mnist_test_loader.dataset)), 1000)
 seed_mnist_subset = torch.utils.data.Subset(mnist_test_loader.dataset, seed_indices)
 seed_mnist_test_loader = DataLoader(seed_mnist_subset, batch_size=1000, shuffle=False)
 
+
+
+
 # Test
-# Zero mutation.
+from myLib.img_mutations import get_img_mutations
+from myLib.probability_img_mutations import ProbabilityImgMutations
+from myLib.fitnessValue import StateFitnessValue
+from myLib.Result import PredictResult
+
+
+class CoveredStatesFallback:
+    """
+    A lightweight replacement for CoveredStates used when pyflann is unavailable.
+    The interface matches update_function(element) -> (add_to_corpus, distance).
+    """
+
+    def __init__(self, threshold=0.50):
+        self.threshold = threshold
+        self.corpus = []
+
+    def update_function(self, element):
+        element = np.asarray(element).reshape(-1)
+        if len(self.corpus) == 0:
+            self.corpus.append(element)
+            return True, 100
+
+        distances = [np.sum(np.square(element - c)) for c in self.corpus]
+        nearest_distance = min(distances)
+        if nearest_distance > self.threshold:
+            self.corpus.append(element)
+            return True, nearest_distance
+        return False, nearest_distance
+
+
+def tensor_to_uint8_img(tensor_img):
+    # tensor_img: [1, 28, 28], normalized by (x - 0.1307) / 0.3081
+    img = tensor_img.squeeze(0).cpu().numpy()
+    img = (img * 0.3081 + 0.1307) * 255.0
+    img = np.clip(img, 0, 255).astype(np.uint8)
+    return img[..., np.newaxis]
+
+
+def uint8_img_to_tensor(img):
+    # img: [28, 28, 1], uint8
+    gray = img.squeeze(-1).astype(np.float32) / 255.0
+    gray = (gray - 0.1307) / 0.3081
+    return torch.from_numpy(gray).unsqueeze(0).unsqueeze(0).to(device)
+
+
+def predict_pair(org_model, cps_model, img_uint8):
+    input_tensor = uint8_img_to_tensor(img_uint8)
+    with torch.no_grad():
+        org_vec = org_model(input_tensor).detach().cpu().numpy()
+        cps_vec = cps_model(input_tensor).detach().cpu().numpy()
+    return PredictResult(org_vec), PredictResult(cps_vec)
+
+
+print("\n===== Attack Mode a Test (step-by-step, no parser args) =====")
+attack_mode_a_maxit = 80
+
 for org_name, cps_name in mnist_kd_pairs:
-    org_model = load_named_model(org_name, model_paths_mnist, model_factories_mnist)
-    cps_model = load_named_model(cps_name, model_paths_mnist, model_factories_mnist)
-    diff = model_pair_predict(org_model, seed_mnist_test_loader, cps_model)
-    print(f"{org_name} vs {cps_name}: diff={diff}")
+    print(f"\n[Attack Mode a] {org_name} vs {cps_name}")
 
-# 续写，attack mode 为a，不需要任何parser传参，就使用目前的step-by-step的写法
-# 不要改动之前的代码，直接在下面续写攻击模式a的测试代码
-# 参考test_gen_main.py中的攻击模式a的实现，直接在下面续写攻击模式a的测试代码
+    org_model = load_named_model(org_name, model_paths_mnist, model_factories_mnist).to(device)
+    cps_model = load_named_model(cps_name, model_paths_mnist, model_factories_mnist).to(device)
+    org_model.eval()
+    cps_model.eval()
 
-# What the fuck
+    success_count = 0
+    already_diff_count = 0
+    total_count = 0
+
+    for data, _ in seed_mnist_test_loader:
+        batch_size = data.size(0)
+        for i in range(batch_size):
+            raw_seed_tensor = data[i]
+            raw_seed_img = tensor_to_uint8_img(raw_seed_tensor)
+
+            covered_states = CoveredStatesFallback()
+            mutation = get_img_mutations()
+            p_mutation = ProbabilityImgMutations(mutation, random_seed=42 + total_count)
+
+            seed_org_result, seed_cps_result = predict_pair(org_model, cps_model, raw_seed_img)
+
+            if seed_org_result.label != seed_cps_result.label:
+                already_diff_count += 1
+                success_count += 1
+                total_count += 1
+                continue
+
+            _, _ = covered_states.update_function(np.hstack([seed_org_result.vec, seed_cps_result.vec]))
+            best_fitness_value = StateFitnessValue(False, 0)
+            latest_img = np.copy(raw_seed_img)
+            last_mutation_operator = None
+
+            found = False
+            for _ in range(1, attack_mode_a_maxit + 1):
+                m = p_mutation.choose_mutator(last_mutation_operator)
+                m.total += 1
+
+                new_img = m.mut(np.copy(latest_img))
+                org_result, cps_result = predict_pair(org_model, cps_model, new_img)
+
+                if org_result.label != cps_result.label:
+                    m.delta_bigger_than_zero += 1
+                    found = True
+                    break
+
+                diff_prob = org_result.prob - cps_result.prob
+                coverage = np.hstack([org_result.vec, cps_result.vec])
+                add_to_corpus, _ = covered_states.update_function(coverage)
+                fitness_value = StateFitnessValue(add_to_corpus, diff_prob)
+
+                if fitness_value.better_than(best_fitness_value):
+                    best_fitness_value = fitness_value
+                    m.delta_bigger_than_zero += 1
+                    latest_img = np.copy(new_img)
+                    last_mutation_operator = m.name
+
+            if found:
+                success_count += 1
+
+            total_count += 1
+
+    print(
+        f"seeds={total_count}, already_diff={already_diff_count}, "
+        f"attack_success={success_count - already_diff_count}, total_success={success_count}"
+    )
