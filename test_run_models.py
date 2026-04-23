@@ -179,7 +179,6 @@ def predict_pair(org_model, cps_model, img_uint8):
 
 
 print("\n===== Attack Mode a Test (step-by-step, no parser args) =====")
-attack_mode_a_seed_limit = 50
 attack_mode_a_maxit = 80
 
 for org_name, cps_name in mnist_kd_pairs:
@@ -197,9 +196,6 @@ for org_name, cps_name in mnist_kd_pairs:
     for data, _ in seed_mnist_test_loader:
         batch_size = data.size(0)
         for i in range(batch_size):
-            if total_count >= attack_mode_a_seed_limit:
-                break
-
             raw_seed_tensor = data[i]
             raw_seed_img = tensor_to_uint8_img(raw_seed_tensor)
 
@@ -248,9 +244,6 @@ for org_name, cps_name in mnist_kd_pairs:
                 success_count += 1
 
             total_count += 1
-
-        if total_count >= attack_mode_a_seed_limit:
-            break
 
     print(
         f"seeds={total_count}, already_diff={already_diff_count}, "
