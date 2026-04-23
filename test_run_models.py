@@ -125,3 +125,111 @@ for org_name, cps_name in mnist_kd_pairs:
 # 参考test_gen_main.py中的攻击模式a的实现，直接在下面续写攻击模式a的测试代码
 
 # What the fuck
+from myLib.img_mutations import get_img_mutations
+from myLib.probability_img_mutations import ProbabilityImgMutations
+from myLib.covered_states import CoveredStates
+from myLib.fitnessValue import StateFitnessValue
+from myLib.Result import PredictResult
+
+
+def tensor_to_uint8_img(tensor_img):
+    # tensor_img: [1, 28, 28], normalized by (x - 0.1307) / 0.3081
+    img = tensor_img.squeeze(0).cpu().numpy()
+    img = (img * 0.3081 + 0.1307) * 255.0
+    img = np.clip(img, 0, 255).astype(np.uint8)
+    return img[..., np.newaxis]
+
+
+def uint8_img_to_tensor(img):
+    # img: [28, 28, 1], uint8
+    gray = img.squeeze(-1).astype(np.float32) / 255.0
+    gray = (gray - 0.1307) / 0.3081
+    return torch.from_numpy(gray).unsqueeze(0).unsqueeze(0).to(device)
+
+
+def predict_pair(org_model, cps_model, img_uint8):
+    input_tensor = uint8_img_to_tensor(img_uint8)
+    with torch.no_grad():
+        org_vec = org_model(input_tensor).detach().cpu().numpy()
+        cps_vec = cps_model(input_tensor).detach().cpu().numpy()
+    return PredictResult(org_vec), PredictResult(cps_vec)
+
+
+print("\n===== Attack Mode a Test (step-by-step, no parser args) =====")
+attack_mode_a_seed_limit = 50
+attack_mode_a_maxit = 80
+
+for org_name, cps_name in mnist_kd_pairs:
+    print(f"\n[Attack Mode a] {org_name} vs {cps_name}")
+
+    org_model = load_named_model(org_name, model_paths_mnist, model_factories_mnist).to(device)
+    cps_model = load_named_model(cps_name, model_paths_mnist, model_factories_mnist).to(device)
+    org_model.eval()
+    cps_model.eval()
+
+    success_count = 0
+    already_diff_count = 0
+    total_count = 0
+
+    for data, _ in seed_mnist_test_loader:
+        batch_size = data.size(0)
+        for i in range(batch_size):
+            if total_count >= attack_mode_a_seed_limit:
+                break
+
+            raw_seed_tensor = data[i]
+            raw_seed_img = tensor_to_uint8_img(raw_seed_tensor)
+
+            covered_states = CoveredStates()
+            mutation = get_img_mutations()
+            p_mutation = ProbabilityImgMutations(mutation, random_seed=42 + total_count)
+
+            seed_org_result, seed_cps_result = predict_pair(org_model, cps_model, raw_seed_img)
+
+            if seed_org_result.label != seed_cps_result.label:
+                already_diff_count += 1
+                success_count += 1
+                total_count += 1
+                continue
+
+            _, _ = covered_states.update_function(np.hstack([seed_org_result.vec, seed_cps_result.vec]))
+            best_fitness_value = StateFitnessValue(False, 0)
+            latest_img = np.copy(raw_seed_img)
+            last_mutation_operator = None
+
+            found = False
+            for _ in range(1, attack_mode_a_maxit + 1):
+                m = p_mutation.choose_mutator(last_mutation_operator)
+                m.total += 1
+
+                new_img = m.mut(np.copy(latest_img))
+                org_result, cps_result = predict_pair(org_model, cps_model, new_img)
+
+                if org_result.label != cps_result.label:
+                    m.delta_bigger_than_zero += 1
+                    found = True
+                    break
+
+                diff_prob = org_result.prob - cps_result.prob
+                coverage = np.hstack([org_result.vec, cps_result.vec])
+                add_to_corpus, _ = covered_states.update_function(coverage)
+                fitness_value = StateFitnessValue(add_to_corpus, diff_prob)
+
+                if fitness_value.better_than(best_fitness_value):
+                    best_fitness_value = fitness_value
+                    m.delta_bigger_than_zero += 1
+                    latest_img = np.copy(new_img)
+                    last_mutation_operator = m.name
+
+            if found:
+                success_count += 1
+
+            total_count += 1
+
+        if total_count >= attack_mode_a_seed_limit:
+            break
+
+    print(
+        f"seeds={total_count}, already_diff={already_diff_count}, "
+        f"attack_success={success_count - already_diff_count}, total_success={success_count}"
+    )
