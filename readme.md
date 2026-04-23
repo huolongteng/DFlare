@@ -14,6 +14,11 @@ Here is an example:
 python3 gen_wrapper_tflite.py --dataset mnist --arch lenet1 --maxit 10000000 --seed 0 --num 500 --cps_type quan --output_dir ./results
 ```
 
+For the PyTorch migration (without TensorFlow/TFLite dependency), use:
+```bash
+python3 gen_wrapper_pytorch.py --dataset mnist --arch lenet1 --maxit 10000000 --seed 0 --num 500 --cps_type quan --output_dir ./results
+```
+
 where `model` can be one of 'lenet1', 'lenet5', 'resnet'.
 If `model` is `resnet`, then it should be `--dataset cifar`.
 
@@ -80,6 +85,19 @@ tensorflow==2.2.0
 
 Feel free to leave a question using issue report, or contact me via yongqiang.tian - at - uwaterloo.ca
 
+## PyTorch migration notes
+
+This repository now includes a PyTorch-only wrapper (`gen_wrapper_pytorch.py`) that keeps the original DFlare search logic (`test_gen_main.py`) but replaces TensorFlow/TFLite model loading with PyTorch model loading.
+
+Workflow:
+1. Train baseline models with `train_models.py`.
+2. Generate compressed models with one of `kd_models.py`, `prun_models.py`, `quan_models.py`.
+3. Run DFlare search using `gen_wrapper_pytorch.py`.
+
+Current supported pairs in the new wrapper:
+- `--dataset mnist --arch lenet1`
+- `--dataset mnist --arch lenet5`
+- `--dataset cifar --arch resnet`
 
 
 
