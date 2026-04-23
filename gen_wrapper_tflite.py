@@ -1,127 +1,146 @@
 import os
+import numpy as np
+import torch
 
 from myLib.Inputs import SubsetInputs
-from myUtils import create_folder, myLogger
-from test_gen_main import tf_gen
-from proj_utils import common_argparser
-from model_loader.load_tflite import load_cps_model, load_org_model
 from myLib.Result import PredictResult
+from myUtils import create_folder, myLogger
+from proj_utils import common_argparser
+from test_gen_main import tf_gen
+from model_loader.load_pytorch_models import load_original_and_compressed_models
 
-import numpy as np
+
+def convert_numpy_to_nchw(img: np.ndarray, dataset: str) -> np.ndarray:
+    # Step 1: convert input to float32.
+    img = img.astype(np.float32)
+
+    # Step 2: add a batch dimension for a single image.
+    if img.ndim == 2:
+        img = img[np.newaxis, :, :]
+    if img.ndim == 3:
+        if dataset == "mnist":
+            # MNIST may be HWC(28,28,1), CHW(1,28,28), or HW(28,28).
+            if img.shape[-1] == 1:
+                img = np.transpose(img, (2, 0, 1))
+        else:
+            # CIFAR may be HWC(32,32,3) or CHW(3,32,32).
+            if img.shape[-1] == 3:
+                img = np.transpose(img, (2, 0, 1))
+        img = img[np.newaxis, ...]
+
+    # Step 3: ensure channel-first batch format.
+    if img.ndim != 4:
+        raise ValueError(f"Unexpected image shape after preprocessing: {img.shape}")
+
+    return img
 
 
-def create_predict_function_tflite(org_model, cps_model):
-    def predict(input_img):
-        org_vec = org_model(input_img)
-        cps_vec = cps_model(input_img)
-        # cross_entropy = -torch.sum(org_output * torch.log(cps_output), dim=1)
+def normalize_for_dataset(img_nchw: np.ndarray, dataset: str) -> np.ndarray:
+    # Step 4: convert uint8-like range to [0, 1].
+    if np.max(img_nchw) > 1.0:
+        img_nchw = img_nchw / 255.0
 
-        org_result = PredictResult(org_vec)
-        cps_result = PredictResult(cps_vec)
+    # Step 5: normalize with the same stats used in model training/evaluation.
+    if dataset == "mnist":
+        mean = np.array([0.1307], dtype=np.float32).reshape(1, 1, 1, 1)
+        std = np.array([0.3081], dtype=np.float32).reshape(1, 1, 1, 1)
+    elif dataset == "cifar":
+        mean = np.array([0.4914, 0.4822, 0.4465], dtype=np.float32).reshape(1, 3, 1, 1)
+        std = np.array([0.2023, 0.1994, 0.2010], dtype=np.float32).reshape(1, 3, 1, 1)
+    else:
+        raise ValueError(f"Unsupported dataset: {dataset}")
 
-        return org_result, cps_result
+    return (img_nchw - mean) / std
+
+
+def build_preprocessing(dataset: str):
+    def preprocessing(img: np.ndarray) -> np.ndarray:
+        img_nchw = convert_numpy_to_nchw(img, dataset)
+        return normalize_for_dataset(img_nchw, dataset)
+
+    return preprocessing
+
+
+def create_predict_function_pytorch(org_model, cps_model, device: torch.device):
+    def predict(input_img: np.ndarray):
+        input_tensor = torch.from_numpy(input_img).to(device=device, dtype=torch.float32)
+        with torch.no_grad():
+            org_output = org_model(input_tensor).detach().cpu().numpy()
+            cps_output = cps_model(input_tensor).detach().cpu().numpy()
+        return PredictResult(org_output), PredictResult(cps_output)
 
     return predict
 
 
-def preprocessing_mnist_tflite(img: np.array) -> np.array:
-    img = img.astype(np.float32)
-    if len(img.shape) == 2:
-        img = img[..., np.newaxis]
-    if len(img.shape) == 3:
+def validate_args(dataset: str, arch: str, cps_type: str):
+    valid_arch = {
+        "mnist": {"lenet1", "simplecnn", "lenet4", "lenet5"},
+        "cifar": {"resnet", "resnet20", "plainnet20", "vgg16"},
+    }
+    valid_cps = {"quan", "prun", "kd"}
 
-        # change to HWC from CHW
-        if img.shape[0] == 1 or img.shape[0] == 3:
-            img = np.transpose(img, (1, 2, 0))
-
-        img = img[np.newaxis, ...]
-
-    img = img / 255.0
-
-    return img
+    if dataset not in valid_arch:
+        raise ValueError("Only mnist and cifar are supported in the PyTorch pipeline.")
+    if arch.lower() not in valid_arch[dataset]:
+        raise ValueError(f"Unsupported arch '{arch}' for dataset '{dataset}'.")
+    if cps_type.lower() not in valid_cps:
+        raise ValueError("cps_type must be one of: quan, prun, kd.")
 
 
-def preprocessing_cifar_tflite(img: np.array) -> np.array:
-    img = img.astype(np.float32)
-
-    if len(img.shape) == 3:
-        img = img[np.newaxis, ...]
-
-    mean = [125.307, 122.95, 113.865]
-    std = [62.9932, 62.0887, 66.7048]
-    for i in range(3):
-        img[:, :, :, i] = (img[:, :, :, i] - mean[i]) / std[i]
-
-    return img
+def get_seed_arch_name(dataset: str, arch: str) -> str:
+    arch = arch.lower()
+    if dataset == "mnist":
+        seed_map = {
+            "simplecnn": "lenet1",
+        }
+        return seed_map.get(arch, arch)
+    if dataset == "cifar":
+        seed_map = {
+            "resnet20": "resnet",
+        }
+        return seed_map.get(arch, arch)
+    return arch
 
 
 def main():
     parser = common_argparser()
-    parser.add_argument("--cps_type", choices=["tflite", "quan"])
+    parser.add_argument("--cps_type", choices=["quan", "prun", "kd"], required=True)
     args = parser.parse_args()
 
-    assert args.dataset == "mnist" or args.dataset == "cifar"
+    validate_args(args.dataset, args.arch, args.cps_type)
+    device = torch.device("cpu" if args.cpu else ("cuda" if torch.cuda.is_available() else "cpu"))
 
-    if "lenet1" in args.arch or "lenet5" in args.arch:
-        assert args.dataset == "mnist"
-    elif "resnet" in args.arch:
-        assert args.dataset == "cifar"
-
-    # TODO: change logger filename
-
-    output_file_folder_name = "{}_{}_{}_{}".format(args.arch, args.cps_type, args.seed, args.attack_mode)
-
-    save_dir = os.path.join(args.output_dir, "{}-tflite".format(args.dataset),
-                            output_file_folder_name)
+    # Step 1: prepare output directory and logger.
+    output_name = f"{args.arch}_{args.cps_type}_{args.seed}_{args.attack_mode}"
+    save_dir = os.path.join(args.output_dir, f"{args.dataset}-pytorch", output_name)
     create_folder(save_dir)
-
-    logger_filename = os.path.join(args.output_dir,"{}-tflite".format(args.dataset), "{}.log".format(output_file_folder_name))
-    logger = myLogger.create_logger(logger_filename)
-    print(args)
+    logger_path = os.path.join(args.output_dir, f"{args.dataset}-pytorch", f"{output_name}.log")
+    logger = myLogger.create_logger(logger_path)
     logger(args)
 
-    logger("Load model")
+    # Step 2: load original/compressed PyTorch models.
+    logger("Load PyTorch models")
+    org_model, cps_model, org_path, cps_path = load_original_and_compressed_models(
+        dataset=args.dataset,
+        arch=args.arch,
+        cps_type=args.cps_type,
+        device=device,
+    )
+    logger(f"Original model: {org_path}")
+    logger(f"Compressed model: {cps_path}")
 
-    # TODO load model
-    if "lenet1" in args.arch or "lenet5" in args.arch or "resnet" in args.arch:
-        org_model_raw, org_model = load_org_model("./diffchaser_models/{}.h5".format(args.arch))
-    else:
-        raise NotImplemented
+    # Step 3: build prediction and preprocessing functions.
+    predict_f = create_predict_function_pytorch(org_model, cps_model, device)
+    preprocessing = build_preprocessing(args.dataset)
 
-    if "tflite" in args.cps_type:
-        cps_model_raw, cps_model = load_cps_model("./diffchaser_models/{}.lite".format(args.arch))
-    elif "quan" in args.cps_type:
-        cps_model_raw, cps_model = load_cps_model("./diffchaser_models/{}-quan.lite".format(args.arch))
-    else:
-        raise NotImplemented
+    # Step 4: load seed inputs from the original DFlare seed file.
+    seed_arch = get_seed_arch_name(args.dataset, args.arch)
+    input_sets = SubsetInputs(args.dataset, "tensorflow", seed_arch, "quan-lite", args.seed)
 
-    # create predict function
-    predict_f = create_predict_function_tflite(org_model, cps_model)
-
-    # prepare inputs set
-    input_sets = SubsetInputs(args.dataset, "tensorflow", args.arch, "quan-lite", args.seed)
-
-    # start the attack
-    logger("Stat the attack")
-
-    if args.dataset == "mnist":
-        preprocessing = preprocessing_mnist_tflite
-    elif args.dataset == "cifar":
-        preprocessing = preprocessing_cifar_tflite
-    else:
-        raise NotImplementedError
-
-    # pm_attack(args, input_sets, logger, save_dir, predict_f, preprocessing)
-
-    # start the attack
-    print("Start the attack")
+    # Step 5: run the original DFlare search logic.
     logger("Start the attack")
     tf_gen(args, input_sets, logger, save_dir, predict_f, preprocessing)
 
 
-if __name__ == '__main__':
-    """
-    DFlare for compressed model using tflite
-    """
-
+if __name__ == "__main__":
     main()
