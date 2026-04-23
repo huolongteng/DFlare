@@ -1,127 +1,78 @@
 import os
 
-from myLib.Inputs import SubsetInputs
-from myUtils import create_folder, myLogger
-from test_gen_main import tf_gen
-from proj_utils import common_argparser
-from model_loader.load_tflite import load_cps_model, load_org_model
-from myLib.Result import PredictResult
-
 import numpy as np
+import torch
+
+from myLib.Inputs import SubsetInputs
+from myLib.Result import PredictResult
+from myUtils import create_folder, myLogger
+from proj_utils import common_argparser
+from test_gen_main import tf_gen
+
+from model_loader.load_pytorch_models import load_model_pair, preprocess_seed_input
 
 
-def create_predict_function_tflite(org_model, cps_model):
+def create_predict_function_pytorch(org_model, cps_model, dataset, device):
     def predict(input_img):
-        org_vec = org_model(input_img)
-        cps_vec = cps_model(input_img)
-        # cross_entropy = -torch.sum(org_output * torch.log(cps_output), dim=1)
+        input_tensor = preprocess_seed_input(dataset, input_img).to(device)
 
-        org_result = PredictResult(org_vec)
-        cps_result = PredictResult(cps_vec)
+        with torch.no_grad():
+            org_logits = org_model(input_tensor).cpu().numpy()
+            cps_logits = cps_model(input_tensor).cpu().numpy()
 
+        org_result = PredictResult(org_logits)
+        cps_result = PredictResult(cps_logits)
         return org_result, cps_result
 
     return predict
 
 
-def preprocessing_mnist_tflite(img: np.array) -> np.array:
-    img = img.astype(np.float32)
-    if len(img.shape) == 2:
-        img = img[..., np.newaxis]
-    if len(img.shape) == 3:
-
-        # change to HWC from CHW
-        if img.shape[0] == 1 or img.shape[0] == 3:
-            img = np.transpose(img, (1, 2, 0))
-
-        img = img[np.newaxis, ...]
-
-    img = img / 255.0
-
-    return img
-
-
-def preprocessing_cifar_tflite(img: np.array) -> np.array:
-    img = img.astype(np.float32)
-
-    if len(img.shape) == 3:
-        img = img[np.newaxis, ...]
-
-    mean = [125.307, 122.95, 113.865]
-    std = [62.9932, 62.0887, 66.7048]
-    for i in range(3):
-        img[:, :, :, i] = (img[:, :, :, i] - mean[i]) / std[i]
-
+def identity_preprocessing(img: np.array) -> np.array:
     return img
 
 
 def main():
     parser = common_argparser()
-    parser.add_argument("--cps_type", choices=["tflite", "quan"])
+    parser.add_argument("--cps_type", choices=["quan", "prun", "kd"], required=True)
+    parser.add_argument("--model_root", type=str, default="./models_")
     args = parser.parse_args()
 
-    assert args.dataset == "mnist" or args.dataset == "cifar"
+    if args.arch in ["lenet1", "lenet5"] and args.dataset != "mnist":
+        raise ValueError("lenet1/lenet5 must be used with --dataset mnist")
+    if args.arch == "resnet" and args.dataset != "cifar":
+        raise ValueError("resnet must be used with --dataset cifar")
+    if args.arch not in ["lenet1", "lenet5", "resnet"]:
+        raise ValueError("Supported arch: lenet1, lenet5, resnet")
 
-    if "lenet1" in args.arch or "lenet5" in args.arch:
-        assert args.dataset == "mnist"
-    elif "resnet" in args.arch:
-        assert args.dataset == "cifar"
+    use_cpu = str(args.cpu).lower() in ["1", "true", "yes"]
+    device = "cpu" if use_cpu or not torch.cuda.is_available() else "cuda"
 
-    # TODO: change logger filename
-
-    output_file_folder_name = "{}_{}_{}_{}".format(args.arch, args.cps_type, args.seed, args.attack_mode)
-
-    save_dir = os.path.join(args.output_dir, "{}-tflite".format(args.dataset),
-                            output_file_folder_name)
+    output_name = f"{args.arch}_{args.cps_type}_{args.seed}_{args.attack_mode}"
+    save_dir = os.path.join(args.output_dir, f"{args.dataset}-pytorch", output_name)
     create_folder(save_dir)
 
-    logger_filename = os.path.join(args.output_dir,"{}-tflite".format(args.dataset), "{}.log".format(output_file_folder_name))
-    logger = myLogger.create_logger(logger_filename)
-    print(args)
+    log_file = os.path.join(args.output_dir, f"{args.dataset}-pytorch", f"{output_name}.log")
+    logger = myLogger.create_logger(log_file)
     logger(args)
+    logger(f"Using device: {device}")
 
-    logger("Load model")
+    org_model, cps_model = load_model_pair(
+        dataset=args.dataset,
+        arch=args.arch,
+        cps_type=args.cps_type,
+        model_root=args.model_root,
+        device=device,
+    )
 
-    # TODO load model
-    if "lenet1" in args.arch or "lenet5" in args.arch or "resnet" in args.arch:
-        org_model_raw, org_model = load_org_model("./diffchaser_models/{}.h5".format(args.arch))
-    else:
-        raise NotImplemented
+    predict_f = create_predict_function_pytorch(org_model, cps_model, args.dataset, device)
 
-    if "tflite" in args.cps_type:
-        cps_model_raw, cps_model = load_cps_model("./diffchaser_models/{}.lite".format(args.arch))
-    elif "quan" in args.cps_type:
-        cps_model_raw, cps_model = load_cps_model("./diffchaser_models/{}-quan.lite".format(args.arch))
-    else:
-        raise NotImplemented
+    # Reuse the existing seed pool and DFlare search logic.
+    input_sets = SubsetInputs(args.dataset, "tensorflow", args.arch, args.cps_type, args.seed)
 
-    # create predict function
-    predict_f = create_predict_function_tflite(org_model, cps_model)
-
-    # prepare inputs set
-    input_sets = SubsetInputs(args.dataset, "tensorflow", args.arch, "quan-lite", args.seed)
-
-    # start the attack
-    logger("Stat the attack")
-
-    if args.dataset == "mnist":
-        preprocessing = preprocessing_mnist_tflite
-    elif args.dataset == "cifar":
-        preprocessing = preprocessing_cifar_tflite
-    else:
-        raise NotImplementedError
-
-    # pm_attack(args, input_sets, logger, save_dir, predict_f, preprocessing)
-
-    # start the attack
     print("Start the attack")
     logger("Start the attack")
-    tf_gen(args, input_sets, logger, save_dir, predict_f, preprocessing)
+    tf_gen(args, input_sets, logger, save_dir, predict_f, identity_preprocessing)
 
 
-if __name__ == '__main__':
-    """
-    DFlare for compressed model using tflite
-    """
-
+if __name__ == "__main__":
     main()

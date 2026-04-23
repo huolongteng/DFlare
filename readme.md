@@ -7,7 +7,8 @@ Classifications_, which is accepted by ACM TOSEM in 2023.
 
 
 ## Instructions
-The main logic of DFlare is in `test_gen_main.py`. To run the code, please run the wrapper: `gen_wrapper_tflite.py`
+The main logic of DFlare is in `test_gen_main.py`.  
+The wrapper `gen_wrapper_tflite.py` is now migrated to a **PyTorch-based** model loading pipeline while keeping the original DFlare search logic.
 
 Here is an example:
 ```bash
@@ -16,6 +17,11 @@ python3 gen_wrapper_tflite.py --dataset mnist --arch lenet1 --maxit 10000000 --s
 
 where `model` can be one of 'lenet1', 'lenet5', 'resnet'.
 If `model` is `resnet`, then it should be `--dataset cifar`.
+
+`cps_type` now supports PyTorch compressed models:
+- `quan` (post-training quantization)
+- `prun` (pruned)
+- `kd` (knowledge distilled)
 
 
 `seed` can be 0,1,2,3,4.
@@ -60,8 +66,7 @@ opencv-python-headless==4.5.3.56
 numpy
 ```
 
-However, the tflite model requires much more. Here we give the list of package in our environment.  
-A full list package for reference is in `tflite_requirement.txt`.
+For the migrated PyTorch workflow, TensorFlow/TFLite is no longer required for the default MNIST/CIFAR pipelines.
 
 
 ### System Package
@@ -70,7 +75,7 @@ pip: 21.2.4
 cuda: 10.1
 ```
 
-### python package
+### python package (legacy reference)
 ```
 Keras==2.4.3
 tensorflow==2.2.0
@@ -79,8 +84,6 @@ tensorflow==2.2.0
 ## Questions
 
 Feel free to leave a question using issue report, or contact me via yongqiang.tian - at - uwaterloo.ca
-
-
 
 
 
