@@ -125,3 +125,166 @@ for org_name, cps_name in mnist_kd_pairs:
 # 参考test_gen_main.py中的攻击模式a的实现，直接在下面续写攻击模式a的测试代码
 
 # What the fuck
+from myLib.img_mutations import get_img_mutations
+from myLib.probability_img_mutations import ProbabilityImgMutations
+from myLib.fitnessValue import StateFitnessValue
+from myLib.Result import PredictResult
+import time
+
+
+class CoveredStatesFallback:
+    """
+    A lightweight replacement for CoveredStates used when pyflann is unavailable.
+    The interface matches update_function(element) -> (add_to_corpus, distance).
+    """
+
+    def __init__(self, threshold=0.50):
+        self.threshold = threshold
+        self.corpus = []
+
+    def update_function(self, element):
+        element = np.asarray(element).reshape(-1)
+        if len(self.corpus) == 0:
+            self.corpus.append(element)
+            return True, 100
+
+        distances = [np.sum(np.square(element - c)) for c in self.corpus]
+        nearest_distance = min(distances)
+        if nearest_distance > self.threshold:
+            self.corpus.append(element)
+            return True, nearest_distance
+        return False, nearest_distance
+
+
+def tensor_to_uint8_img(tensor_img):
+    # tensor_img: [1, 28, 28], normalized by (x - 0.1307) / 0.3081
+    img = tensor_img.squeeze(0).cpu().numpy()
+    img = (img * 0.3081 + 0.1307) * 255.0
+    img = np.clip(img, 0, 255).astype(np.uint8)
+    return img[..., np.newaxis]
+
+
+def uint8_img_to_tensor(img):
+    # img: [28, 28, 1], uint8
+    gray = img.squeeze(-1).astype(np.float32) / 255.0
+    gray = (gray - 0.1307) / 0.3081
+    return torch.from_numpy(gray).unsqueeze(0).unsqueeze(0).to(device)
+
+
+def predict_pair(org_model, cps_model, img_uint8):
+    input_tensor = uint8_img_to_tensor(img_uint8)
+    with torch.no_grad():
+        org_vec = org_model(input_tensor).detach().cpu().numpy()
+        cps_vec = cps_model(input_tensor).detach().cpu().numpy()
+    return PredictResult(org_vec), PredictResult(cps_vec)
+
+
+print("\n===== Attack Mode a Test (step-by-step, no parser args) =====")
+attack_mode_a_maxit = 80
+attack_mode_a_runs = 10
+
+for org_name, cps_name in mnist_kd_pairs:
+    print(f"\n[Attack Mode a] {org_name} vs {cps_name}")
+
+    org_model = load_named_model(org_name, model_paths_mnist, model_factories_mnist).to(device)
+    cps_model = load_named_model(cps_name, model_paths_mnist, model_factories_mnist).to(device)
+    org_model.eval()
+    cps_model.eval()
+
+    run_success_rates = []
+    total_success_time = 0.0
+    total_success_query = 0
+    total_success_attacks = 0
+
+    for run_idx in range(attack_mode_a_runs):
+        run_seed = 42 + run_idx
+        random.seed(run_seed)
+        np.random.seed(run_seed)
+        torch.manual_seed(run_seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(run_seed)
+
+        success_count = 0
+        already_diff_count = 0
+        total_count = 0
+        attack_success_count = 0
+        attack_trial_count = 0
+
+        for data, _ in seed_mnist_test_loader:
+            batch_size = data.size(0)
+            for i in range(batch_size):
+                raw_seed_tensor = data[i]
+                raw_seed_img = tensor_to_uint8_img(raw_seed_tensor)
+
+                covered_states = CoveredStatesFallback()
+                mutation = get_img_mutations()
+                p_mutation = ProbabilityImgMutations(mutation, random_seed=run_seed + total_count)
+
+                seed_org_result, seed_cps_result = predict_pair(org_model, cps_model, raw_seed_img)
+
+                if seed_org_result.label != seed_cps_result.label:
+                    already_diff_count += 1
+                    success_count += 1
+                    total_count += 1
+                    continue
+
+                attack_trial_count += 1
+                start_time = time.time()
+                _, _ = covered_states.update_function(np.hstack([seed_org_result.vec, seed_cps_result.vec]))
+                best_fitness_value = StateFitnessValue(False, 0)
+                latest_img = np.copy(raw_seed_img)
+                last_mutation_operator = None
+
+                found = False
+                success_query = 0
+                for iteration in range(1, attack_mode_a_maxit + 1):
+                    m = p_mutation.choose_mutator(last_mutation_operator)
+                    m.total += 1
+
+                    new_img = m.mut(np.copy(latest_img))
+                    org_result, cps_result = predict_pair(org_model, cps_model, new_img)
+
+                    if org_result.label != cps_result.label:
+                        m.delta_bigger_than_zero += 1
+                        found = True
+                        success_query = iteration
+                        break
+
+                    diff_prob = org_result.prob - cps_result.prob
+                    coverage = np.hstack([org_result.vec, cps_result.vec])
+                    add_to_corpus, _ = covered_states.update_function(coverage)
+                    fitness_value = StateFitnessValue(add_to_corpus, diff_prob)
+
+                    if fitness_value.better_than(best_fitness_value):
+                        best_fitness_value = fitness_value
+                        m.delta_bigger_than_zero += 1
+                        latest_img = np.copy(new_img)
+                        last_mutation_operator = m.name
+
+                if found:
+                    success_count += 1
+                    attack_success_count += 1
+                    total_success_attacks += 1
+                    total_success_time += (time.time() - start_time)
+                    total_success_query += success_query
+
+                total_count += 1
+
+        run_success_rate = attack_success_count / attack_trial_count if attack_trial_count > 0 else 0.0
+        run_success_rates.append(run_success_rate)
+        print(
+            f"run={run_idx + 1}/{attack_mode_a_runs}, seed={run_seed}, "
+            f"seeds={total_count}, already_diff={already_diff_count}, "
+            f"attack_trials={attack_trial_count}, attack_success={attack_success_count}, "
+            f"success_rate={run_success_rate:.4f}"
+        )
+
+    average_success_rate = float(np.mean(run_success_rates)) if len(run_success_rates) > 0 else 0.0
+    average_time = total_success_time / total_success_attacks if total_success_attacks > 0 else 0.0
+    average_query = total_success_query / total_success_attacks if total_success_attacks > 0 else 0.0
+    print(
+        f"[Attack Mode a Average over {attack_mode_a_runs} runs] "
+        f"avg_success_rate={average_success_rate:.4f}, "
+        f"avg_time={average_time:.6f}s, avg_query={average_query:.2f}, "
+        f"total_success_attacks={total_success_attacks}"
+    )
