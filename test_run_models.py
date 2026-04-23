@@ -83,23 +83,23 @@ def load_named_model(model_name, model_paths, model_factories):
     return model
 
 
-def model_pair_predict(org_model, dataloader, cps_model):
-    org_model.to(device)
-    cps_model.to(device)
-    org_model.eval()
-    cps_model.eval()
-    diff = 0
+# def model_pair_predict(org_model, dataloader, cps_model):
+#     org_model.to(device)
+#     cps_model.to(device)
+#     org_model.eval()
+#     cps_model.eval()
+#     diff = 0
     
-    with torch.no_grad():
-        for data, target in dataloader:
-            data, target = data.to(device), target.to(device)
-            org_outputs = org_model(data)
-            cps_outputs = cps_model(data)
-            _, org_predicted = torch.max(org_outputs.data, 1)
-            _, cps_predicted = torch.max(cps_outputs.data, 1)
-            diff += (org_predicted != cps_predicted).sum().item()
+#     with torch.no_grad():
+#         for data, target in dataloader:
+#             data, target = data.to(device), target.to(device)
+#             org_outputs = org_model(data)
+#             cps_outputs = cps_model(data)
+#             _, org_predicted = torch.max(org_outputs.data, 1)
+#             _, cps_predicted = torch.max(cps_outputs.data, 1)
+#             diff += (org_predicted != cps_predicted).sum().item()
     
-    return diff
+#     return diff
     
 mnist_kd_pairs = [
     ("SimpleCNN", "SimpleCNN_kd"),
@@ -112,19 +112,10 @@ seed_indices = random.sample(range(len(mnist_test_loader.dataset)), 1000)
 seed_mnist_subset = torch.utils.data.Subset(mnist_test_loader.dataset, seed_indices)
 seed_mnist_test_loader = DataLoader(seed_mnist_subset, batch_size=1000, shuffle=False)
 
+
+
+
 # Test
-# Zero mutation.
-for org_name, cps_name in mnist_kd_pairs:
-    org_model = load_named_model(org_name, model_paths_mnist, model_factories_mnist)
-    cps_model = load_named_model(cps_name, model_paths_mnist, model_factories_mnist)
-    diff = model_pair_predict(org_model, seed_mnist_test_loader, cps_model)
-    print(f"{org_name} vs {cps_name}: diff={diff}")
-
-# 续写，attack mode 为a，不需要任何parser传参，就使用目前的step-by-step的写法
-# 不要改动之前的代码，直接在下面续写攻击模式a的测试代码
-# 参考test_gen_main.py中的攻击模式a的实现，直接在下面续写攻击模式a的测试代码
-
-# What the fuck
 from myLib.img_mutations import get_img_mutations
 from myLib.probability_img_mutations import ProbabilityImgMutations
 from myLib.fitnessValue import StateFitnessValue
