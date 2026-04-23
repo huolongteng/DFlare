@@ -62,9 +62,9 @@ To apply it on other models, please revise the `gen_wrapper_tflite.py'
 DFlare majorly requires the following package.
 
 ```
-pyflann-py3==0.1.0
 opencv-python-headless==4.5.3.56
 numpy
+scikit-learn
 ```
 
 Legacy TFLite setup requires much more. Here we give the list of package in the historical environment for reference.  
@@ -86,8 +86,6 @@ tensorflow==2.2.0
 ## Questions
 
 Feel free to leave a question using issue report, or contact me via yongqiang.tian - at - uwaterloo.ca
-
-
 
 
 

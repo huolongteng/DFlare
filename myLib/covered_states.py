@@ -1,5 +1,5 @@
-import pyflann
 import numpy as np
+from sklearn.neighbors import NearestNeighbors
 
 # This class covered_states is used to record the covered states
 # by the current testing input.
@@ -13,19 +13,19 @@ _INIT_SIZE = 1
 class CoveredStates(object):
     """Class holding the state of the update function."""
 
-    def __init__(self, threshold=0.50, algorithm="kdtree"):
+    def __init__(self, threshold=0.50, algorithm="kd_tree"):
         """Inits the object.
         Args:
           threshold: Float distance at which coverage is considered new.
-          algorithm: Algorithm used to get approximate neighbors.
+          algorithm: NearestNeighbors algorithm (e.g., 'kd_tree', 'ball_tree', 'brute').
         Returns:
           Initialized object.
         """
-        self.flann = pyflann.FLANN()
         self.threshold = threshold
         self.algorithm = algorithm
         self.corpus_buffer = []
         self.lookup_array = []
+        self.nn_index = None
 
         self.corpus = []
 
@@ -41,7 +41,8 @@ class CoveredStates(object):
         self.lookup_array = np.vstack(
             self.corpus
         )
-        self.flann.build_index(self.lookup_array, algorithm=self.algorithm)
+        self.nn_index = NearestNeighbors(n_neighbors=1, algorithm=self.algorithm, metric="euclidean")
+        self.nn_index.fit(self.lookup_array)
         # tf.logging.info("Flushing buffer and building index.")
 
     def update_function(self, element):
@@ -52,9 +53,8 @@ class CoveredStates(object):
         Whenever we check for neighbors, we get exact neighbors from the
         buffer and approximate neighbors from the index.
         This stops us from building the index too frequently.
-        FLANN supports incremental additions to the index, but they require
-        periodic rebalancing anyway, and so far this method seems to be
-        working OK.
+        We keep a small in-memory buffer and periodically rebuild the index,
+        following the same high-level strategy as the original implementation.
         Args:
           corpus_object: InputCorpus object.
           element: CorpusElement object to maybe be added to the corpus.
@@ -65,14 +65,16 @@ class CoveredStates(object):
             self.build_index_and_flush_buffer()
             return True, 100
         else:
-            _, approx_distances = self.flann.nn_index(
-                element, 1, algorithm=self.algorithm
-            )
+            if self.nn_index is None:
+                self.build_index_and_flush_buffer()
+
+            distances, _ = self.nn_index.kneighbors(np.asarray(element).reshape(1, -1), n_neighbors=1)
+            approx_distances = [float(distances[0][0] ** 2)]
             exact_distances = [
                 np.sum(np.square(element - buffer_elt))
                 for buffer_elt in self.corpus_buffer
             ]
-            nearest_distance = min(exact_distances + approx_distances.tolist())
+            nearest_distance = min(exact_distances + approx_distances)
             if nearest_distance > self.threshold:
                 # tf.logging.info(
                 #     "corpus_size %s mutations_processed %s",
