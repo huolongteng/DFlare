@@ -96,7 +96,24 @@ def get_compressed_checkpoint_name(dataset: str, arch: str, cps_type: str) -> st
 
 
 def load_model_from_checkpoint(model, checkpoint_path: str, device: torch.device):
-    state_dict = torch.load(checkpoint_path, map_location=device)
+    checkpoint_obj = torch.load(checkpoint_path, map_location=device)
+    state_dict = checkpoint_obj
+
+    if isinstance(checkpoint_obj, dict) and "state_dict" in checkpoint_obj and isinstance(checkpoint_obj["state_dict"], dict):
+        state_dict = checkpoint_obj["state_dict"]
+
+    # INC/NNC compressed checkpoints may contain multiple prefixed models.
+    # Prefer the compressed runtime model weights (_model.*), then fallback to fp32/model/module prefixes.
+    if any(k.startswith("_model.") for k in state_dict.keys()):
+        state_dict = {k[len("_model."):]: v for k, v in state_dict.items() if k.startswith("_model.")}
+    elif any(k.startswith("fp32_model.") for k in state_dict.keys()):
+        state_dict = {k[len("fp32_model."):]: v for k, v in state_dict.items() if k.startswith("fp32_model.")}
+    elif any(k.startswith("model.") for k in state_dict.keys()):
+        state_dict = {k[len("model."):]: v for k, v in state_dict.items() if k.startswith("model.")}
+
+    if any(k.startswith("module.") for k in state_dict.keys()):
+        state_dict = {k[len("module."):]: v for k, v in state_dict.items()}
+
     model.load_state_dict(state_dict)
     model.to(device)
     model.eval()

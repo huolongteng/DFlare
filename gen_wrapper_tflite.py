@@ -113,7 +113,8 @@ def main():
     # Step 1: prepare output directory and logger.
     output_name = f"{args.arch}_{args.cps_type}_{args.seed}_{args.attack_mode}"
     save_dir = os.path.join(args.output_dir, f"{args.dataset}-pytorch", output_name)
-    create_folder(save_dir)
+    # Allow repeated runs with the same arguments.
+    create_folder(save_dir, safe=False)
     logger_path = os.path.join(args.output_dir, f"{args.dataset}-pytorch", f"{output_name}.log")
     logger = myLogger.create_logger(logger_path)
     logger(args)

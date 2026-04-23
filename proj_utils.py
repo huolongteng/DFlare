@@ -35,20 +35,27 @@ def summary_attack_results(success_iter, logger, attack_mode):
     no_search_rate = np.sum(success_iter == 0)
     success_rate = np.sum(success_iter > 0)
     failure_rate = np.sum(success_iter < 0)
-    summary_str = "Attack Summary for "
-
-    summary_str += "Attack Mode: {}\n".format(attack_modes[attack_mode])
-    summary_str += " Total {}, NoNeed {}, Success {}, Failed {}\n".format(len(success_iter), no_search_rate,
-                                                                          success_rate, failure_rate)
+    total = len(success_iter)
+    summary_str = "Attack Summary\n"
+    summary_str += " Attack Mode: {}\n".format(attack_modes[attack_mode])
+    summary_str += " Total Seeds: {}\n".format(total)
+    summary_str += " NoNeed: {} ({:.2%})  # original/compressed already disagree on seed input\n".format(
+        no_search_rate, no_search_rate / total
+    )
+    summary_str += " Success: {} ({:.2%}) # found disagreement after mutation\n".format(
+        success_rate, success_rate / total
+    )
+    summary_str += " Failed: {} ({:.2%})  # no disagreement found within limits\n".format(
+        failure_rate, failure_rate / total
+    )
 
     success = success_iter[success_iter > 0]
     if len(success) > 0:
-        summary_str = summary_str + "Avg {:.04f}".format(np.mean(success))
-        summary_str = summary_str + "\tMedian {:.04f}".format(np.median(success))
-        summary_str = summary_str + "\tMin {:04f}".format(np.min(success))
-        summary_str = summary_str + "\tMax {:05f}".format(np.max(success))
+        summary_str = summary_str + " Iterations for successful cases -> Avg {:.04f}".format(np.mean(success))
+        summary_str = summary_str + ", Median {:.04f}".format(np.median(success))
+        summary_str = summary_str + ", Min {:04f}".format(np.min(success))
+        summary_str = summary_str + ", Max {:05f}".format(np.max(success))
 
     print(summary_str)
     logger(summary_str)
-
 

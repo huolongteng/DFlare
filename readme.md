@@ -22,6 +22,12 @@ where `model` can be:
 
 `seed` can be 0,1,2,3,4.
 
+### How to read the attack summary
+- `NoNeed`: original and compressed models already predict different labels on the original seed image.
+- `Success`: DFlare found a mutated image that makes predictions diverge.
+- `Failed`: no divergent sample found before timeout / max iterations.
+- `Avg/Median/Min/Max`: mutation iterations for **successful** seeds only.
+
 ## Dataset and Models.
 
 
@@ -86,7 +92,6 @@ tensorflow==2.2.0
 ## Questions
 
 Feel free to leave a question using issue report, or contact me via yongqiang.tian - at - uwaterloo.ca
-
 
 
 
