@@ -170,8 +170,15 @@ def predict_pair(org_model, cps_model, img_uint8):
     return PredictResult(org_vec), PredictResult(cps_vec)
 
 
+def prob_to_scalar(prob):
+    """Convert PredictResult.prob into a scalar float."""
+    prob_arr = np.asarray(prob).reshape(-1)
+    return float(prob_arr[0]) if prob_arr.size > 0 else float(prob)
+
+
 print("\n===== Attack Mode a Test (step-by-step, no parser args) =====")
 attack_mode_a_maxit = 80
+attack_mode_a_timeout = 10.0  # seconds per seed
 attack_mode_a_runs = 10
 
 for org_name, cps_name in mnist_kd_pairs:
@@ -229,6 +236,9 @@ for org_name, cps_name in mnist_kd_pairs:
                 found = False
                 success_query = 0
                 for iteration in range(1, attack_mode_a_maxit + 1):
+                    if time.time() - start_time > attack_mode_a_timeout:
+                        break
+
                     m = p_mutation.choose_mutator(last_mutation_operator)
                     m.total += 1
 
@@ -241,7 +251,7 @@ for org_name, cps_name in mnist_kd_pairs:
                         success_query = iteration
                         break
 
-                    diff_prob = org_result.prob - cps_result.prob
+                    diff_prob = prob_to_scalar(org_result.prob) - prob_to_scalar(cps_result.prob)
                     coverage = np.hstack([org_result.vec, cps_result.vec])
                     add_to_corpus, _ = covered_states.update_function(coverage)
                     fitness_value = StateFitnessValue(add_to_corpus, diff_prob)
