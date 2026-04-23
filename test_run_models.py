@@ -127,9 +127,32 @@ for org_name, cps_name in mnist_kd_pairs:
 # What the fuck
 from myLib.img_mutations import get_img_mutations
 from myLib.probability_img_mutations import ProbabilityImgMutations
-from myLib.covered_states import CoveredStates
 from myLib.fitnessValue import StateFitnessValue
 from myLib.Result import PredictResult
+
+
+class CoveredStatesFallback:
+    """
+    A lightweight replacement for CoveredStates used when pyflann is unavailable.
+    The interface matches update_function(element) -> (add_to_corpus, distance).
+    """
+
+    def __init__(self, threshold=0.50):
+        self.threshold = threshold
+        self.corpus = []
+
+    def update_function(self, element):
+        element = np.asarray(element).reshape(-1)
+        if len(self.corpus) == 0:
+            self.corpus.append(element)
+            return True, 100
+
+        distances = [np.sum(np.square(element - c)) for c in self.corpus]
+        nearest_distance = min(distances)
+        if nearest_distance > self.threshold:
+            self.corpus.append(element)
+            return True, nearest_distance
+        return False, nearest_distance
 
 
 def tensor_to_uint8_img(tensor_img):
@@ -180,7 +203,7 @@ for org_name, cps_name in mnist_kd_pairs:
             raw_seed_tensor = data[i]
             raw_seed_img = tensor_to_uint8_img(raw_seed_tensor)
 
-            covered_states = CoveredStates()
+            covered_states = CoveredStatesFallback()
             mutation = get_img_mutations()
             p_mutation = ProbabilityImgMutations(mutation, random_seed=42 + total_count)
 
