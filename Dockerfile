@@ -1,4 +1,5 @@
-FROM tensorflow/tensorflow:2.2.0
+ARG TF_IMAGE=tensorflow/tensorflow:2.2.0
+FROM ${TF_IMAGE}
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1 \
@@ -7,7 +8,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 WORKDIR /workspace/DFlare
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN rm -f /etc/apt/sources.list.d/cuda.list /etc/apt/sources.list.d/nvidia-ml.list && \
+    apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     ca-certificates \
     git \

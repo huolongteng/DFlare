@@ -31,7 +31,7 @@ def common_argparser():
     return parser
 
 
-def summary_attack_results(success_iter, logger, attack_mode):
+def summary_attack_results(success_iter, logger, attack_mode, seed_times=None, total_runtime=None):
     no_search_rate = np.sum(success_iter == 0)
     success_rate = np.sum(success_iter > 0)
     failure_rate = np.sum(success_iter < 0)
@@ -47,6 +47,16 @@ def summary_attack_results(success_iter, logger, attack_mode):
         summary_str = summary_str + "\tMedian {:.04f}".format(np.median(success))
         summary_str = summary_str + "\tMin {:04f}".format(np.min(success))
         summary_str = summary_str + "\tMax {:05f}".format(np.max(success))
+
+    if seed_times is not None and len(seed_times) > 0:
+        summary_str += "\nTime Summary"
+        summary_str += "\tAvg {:.04f}s".format(np.mean(seed_times))
+        summary_str += "\tMedian {:.04f}s".format(np.median(seed_times))
+        summary_str += "\tMin {:.04f}s".format(np.min(seed_times))
+        summary_str += "\tMax {:.04f}s".format(np.max(seed_times))
+
+    if total_runtime is not None:
+        summary_str += "\nTotal Runtime {:.04f}s".format(total_runtime)
 
     print(summary_str)
     logger(summary_str)

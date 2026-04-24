@@ -12,8 +12,10 @@ import time
 
 
 def tf_gen(args, inputs_set, logger, save_dir, predict_f, preprocessing):
-    number_of_data = inputs_set.len
+    overall_start_time = time.time()
+    number_of_data = min(inputs_set.len, args.num)
     success_iter = np.ones([number_of_data]) * -1
+    seed_times = np.zeros([number_of_data])
     l2distances = np.ones([number_of_data]) * -1
     newl2distances = np.ones([number_of_data]) * -1
     num_reductions = []
@@ -149,6 +151,9 @@ def tf_gen(args, inputs_set, logger, save_dir, predict_f, preprocessing):
                     logger("Best " + str(best_fitness_value))
 
         result.save()
+        seed_times[idx] = time.time() - start_time
 
     # compute the results
-    summary_attack_results(success_iter, logger, args.attack_mode)
+    total_runtime = time.time() - overall_start_time
+    summary_attack_results(success_iter, logger, args.attack_mode, seed_times=seed_times,
+                           total_runtime=total_runtime)
