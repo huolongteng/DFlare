@@ -12,7 +12,8 @@ import numpy as np
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-random.seed(42)
+GLOBAL_SEED = 42
+random.seed(GLOBAL_SEED)
 
 # Data
 # MNIST
@@ -108,9 +109,13 @@ mnist_kd_pairs = [
 ]
 
 
-seed_indices = random.sample(range(len(mnist_test_loader.dataset)), 1000)
-seed_mnist_subset = torch.utils.data.Subset(mnist_test_loader.dataset, seed_indices)
-seed_mnist_test_loader = DataLoader(seed_mnist_subset, batch_size=1000, shuffle=False)
+def build_seed_loader(dataset, run_seed, num_seeds=1000):
+    """Build a deterministic per-run seed subset to ensure different runs use different seeds."""
+    rng = random.Random(run_seed)
+    sample_size = min(num_seeds, len(dataset))
+    seed_indices = rng.sample(range(len(dataset)), sample_size)
+    seed_subset = torch.utils.data.Subset(dataset, seed_indices)
+    return DataLoader(seed_subset, batch_size=sample_size, shuffle=False), seed_indices
 
 
 
@@ -118,7 +123,6 @@ seed_mnist_test_loader = DataLoader(seed_mnist_subset, batch_size=1000, shuffle=
 # Test
 from myLib.img_mutations import get_img_mutations
 from myLib.probability_img_mutations import ProbabilityImgMutations
-from myLib.fitnessValue import StateFitnessValue
 from myLib.Result import PredictResult
 import time
 
@@ -176,6 +180,11 @@ def prob_to_scalar(prob):
     return float(prob_arr[0]) if prob_arr.size > 0 else float(prob)
 
 
+def compute_discrepancy_score(org_result, cps_result):
+    """Fitness proxy H_{f,g}(x): larger means outputs are more different."""
+    return abs(prob_to_scalar(org_result.prob) - prob_to_scalar(cps_result.prob))
+
+
 print("\n===== Attack Mode a Test (step-by-step, no parser args) =====")
 attack_mode_a_maxit = 80
 attack_mode_a_timeout = 10.0  # seconds per seed
@@ -201,6 +210,7 @@ for org_name, cps_name in mnist_kd_pairs:
         torch.manual_seed(run_seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(run_seed)
+        seed_mnist_test_loader, seed_indices = build_seed_loader(mnist_test_loader.dataset, run_seed)
 
         success_count = 0
         already_diff_count = 0
@@ -229,7 +239,8 @@ for org_name, cps_name in mnist_kd_pairs:
                 attack_trial_count += 1
                 start_time = time.time()
                 _, _ = covered_states.update_function(np.hstack([seed_org_result.vec, seed_cps_result.vec]))
-                best_fitness_value = StateFitnessValue(False, 0)
+                best_score = compute_discrepancy_score(seed_org_result, seed_cps_result)
+                best_add_to_corpus = False
                 latest_img = np.copy(raw_seed_img)
                 last_mutation_operator = None
 
@@ -241,6 +252,8 @@ for org_name, cps_name in mnist_kd_pairs:
 
                     m = p_mutation.choose_mutator(last_mutation_operator)
                     m.total += 1
+                    # Keep previous operator as the one used in the last iteration (Algorithm 2).
+                    last_mutation_operator = m.name
 
                     new_img = m.mut(np.copy(latest_img))
                     org_result, cps_result = predict_pair(org_model, cps_model, new_img)
@@ -251,16 +264,18 @@ for org_name, cps_name in mnist_kd_pairs:
                         success_query = iteration
                         break
 
-                    diff_prob = prob_to_scalar(org_result.prob) - prob_to_scalar(cps_result.prob)
+                    candidate_score = compute_discrepancy_score(org_result, cps_result)
                     coverage = np.hstack([org_result.vec, cps_result.vec])
                     add_to_corpus, _ = covered_states.update_function(coverage)
-                    fitness_value = StateFitnessValue(add_to_corpus, diff_prob)
 
-                    if fitness_value.better_than(best_fitness_value):
-                        best_fitness_value = fitness_value
+                    # DFlare guidance: keep x when H_{f,g}(x) >= H_{f,g}(x_max).
+                    if (candidate_score > best_score + 1e-12) or (
+                        abs(candidate_score - best_score) <= 1e-12 and add_to_corpus and not best_add_to_corpus
+                    ):
+                        best_score = candidate_score
+                        best_add_to_corpus = add_to_corpus
                         m.delta_bigger_than_zero += 1
                         latest_img = np.copy(new_img)
-                        last_mutation_operator = m.name
 
                 if found:
                     success_count += 1
@@ -275,7 +290,7 @@ for org_name, cps_name in mnist_kd_pairs:
         run_success_rates.append(run_success_rate)
         print(
             f"run={run_idx + 1}/{attack_mode_a_runs}, seed={run_seed}, "
-            f"seeds={total_count}, already_diff={already_diff_count}, "
+            f"seeds={total_count}, unique_seed_count={len(seed_indices)}, already_diff={already_diff_count}, "
             f"attack_trials={attack_trial_count}, attack_success={attack_success_count}, "
             f"success_rate={run_success_rate:.4f}"
         )
