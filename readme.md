@@ -76,6 +76,17 @@ Keras==2.4.3
 tensorflow==2.2.0
 ```
 
+## Running on Windows or a remote Linux host
+
+If you are trying to reproduce the project from a Windows machine, the easiest path is to use Docker instead of installing the old stack directly on Windows.
+
+See [docs/windows-docker.md](docs/windows-docker.md) for:
+
+- a Docker-based workflow for Windows hosts
+- a remote Linux server setup
+- example commands for the `gen_wrapper_tflite.py` entrypoint
+- notes about required model files and common issues
+
 ## Questions
 
 Feel free to leave a question using issue report, or contact me via yongqiang.tian - at - uwaterloo.ca
