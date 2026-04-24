@@ -6,6 +6,8 @@ from model_definitions import (
 )
 import torch
 import random
+import os
+import pickle
 
 import cv2
 import numpy as np
@@ -108,13 +110,6 @@ mnist_kd_pairs = [
 ]
 
 
-seed_indices = random.sample(range(len(mnist_test_loader.dataset)), 1000)
-seed_mnist_subset = torch.utils.data.Subset(mnist_test_loader.dataset, seed_indices)
-seed_mnist_test_loader = DataLoader(seed_mnist_subset, batch_size=1000, shuffle=False)
-
-
-
-
 # Test
 from myLib.img_mutations import get_img_mutations
 from myLib.probability_img_mutations import ProbabilityImgMutations
@@ -182,6 +177,57 @@ def scalar_prob(prob_value):
     return float(arr[0]) if arr.size > 0 else 0.0
 
 
+def _find_xy_dict_in_pickle(obj):
+    """Best-effort search for a dict containing X/Y arrays in seed_inputs.p."""
+    stack = [obj]
+    while len(stack) > 0:
+        cur = stack.pop()
+        if isinstance(cur, dict):
+            if "X" in cur and "Y" in cur:
+                return cur
+            stack.extend(cur.values())
+    return None
+
+
+def _to_uint8_mnist(img):
+    arr = np.asarray(img)
+    if arr.ndim == 2:
+        arr = arr[..., np.newaxis]
+    elif arr.ndim == 3 and arr.shape[0] == 1 and arr.shape[-1] != 1:
+        arr = np.transpose(arr, (1, 2, 0))
+    if arr.dtype != np.uint8:
+        if np.max(arr) <= 1.0:
+            arr = arr * 255.0
+        arr = np.clip(arr, 0, 255).astype(np.uint8)
+    return arr
+
+
+def build_seed_uint8_images(run_seed, num_seeds=1000):
+    """Prefer seed_inputs.p to match tf_gen seed corpus; fallback to MNIST test random sample."""
+    if os.path.exists("./seed_inputs.p"):
+        try:
+            with open("./seed_inputs.p", "rb") as f:
+                seed_pickle = pickle.load(f)
+            mnist_obj = seed_pickle.get("mnist", seed_pickle)
+            xy_dict = _find_xy_dict_in_pickle(mnist_obj)
+            if xy_dict is not None and len(xy_dict["X"]) > 0:
+                x_arr = np.asarray(xy_dict["X"])
+                rng = np.random.RandomState(run_seed)
+                k = min(num_seeds, len(x_arr))
+                indices = rng.choice(len(x_arr), size=k, replace=False)
+                return [_to_uint8_mnist(x_arr[i]) for i in indices]
+        except Exception as e:
+            print(f"[WARN] failed to load seed_inputs.p, fallback to MNIST test subset: {e}")
+
+    rng = random.Random(run_seed)
+    indices = rng.sample(range(len(mnist_test_dataset)), min(num_seeds, len(mnist_test_dataset)))
+    seed_imgs = []
+    for idx in indices:
+        tensor_img, _ = mnist_test_dataset[idx]
+        seed_imgs.append(tensor_to_uint8_img(tensor_img))
+    return seed_imgs
+
+
 for org_name, cps_name in mnist_kd_pairs:
     print(f"\n[Attack Mode a] {org_name} vs {cps_name}")
 
@@ -209,68 +255,64 @@ for org_name, cps_name in mnist_kd_pairs:
         attack_success_count = 0
         attack_trial_count = 0
 
-        for data, _ in seed_mnist_test_loader:
-            batch_size = data.size(0)
-            for i in range(batch_size):
-                raw_seed_tensor = data[i]
-                raw_seed_img = tensor_to_uint8_img(raw_seed_tensor)
+        run_seed_imgs = build_seed_uint8_images(run_seed, num_seeds=1000)
+        for raw_seed_img in run_seed_imgs:
+            covered_states = CoveredStatesFallback()
+            mutation = get_img_mutations()
+            p_mutation = ProbabilityImgMutations(mutation, random_seed=run_seed + total_count)
 
-                covered_states = CoveredStatesFallback()
-                mutation = get_img_mutations()
-                p_mutation = ProbabilityImgMutations(mutation, random_seed=run_seed + total_count)
+            seed_org_result, seed_cps_result = predict_pair(org_model, cps_model, raw_seed_img)
 
-                seed_org_result, seed_cps_result = predict_pair(org_model, cps_model, raw_seed_img)
-
-                if seed_org_result.label != seed_cps_result.label:
-                    already_diff_count += 1
-                    success_count += 1
-                    total_count += 1
-                    continue
-
-                attack_trial_count += 1
-                start_time = time.time()
-                _, _ = covered_states.update_function(np.hstack([seed_org_result.vec, seed_cps_result.vec]))
-                best_fitness_value = StateFitnessValue(False, 0)
-                latest_img = np.copy(raw_seed_img)
-                last_mutation_operator = None
-
-                found = False
-                success_query = 0
-                for iteration in range(1, attack_mode_a_maxit + 1):
-                    if time.time() - start_time > attack_mode_a_timeout:
-                        break
-
-                    m = p_mutation.choose_mutator(last_mutation_operator)
-                    m.total += 1
-
-                    new_img = m.mut(np.copy(latest_img))
-                    org_result, cps_result = predict_pair(org_model, cps_model, new_img)
-
-                    if org_result.label != cps_result.label:
-                        m.delta_bigger_than_zero += 1
-                        found = True
-                        success_query = iteration
-                        break
-
-                    diff_prob = scalar_prob(org_result.prob) - scalar_prob(cps_result.prob)
-                    coverage = np.hstack([org_result.vec, cps_result.vec])
-                    add_to_corpus, _ = covered_states.update_function(coverage)
-                    fitness_value = StateFitnessValue(add_to_corpus, diff_prob)
-
-                    if fitness_value.better_than(best_fitness_value):
-                        best_fitness_value = fitness_value
-                        m.delta_bigger_than_zero += 1
-                        latest_img = np.copy(new_img)
-                        last_mutation_operator = m.name
-
-                if found:
-                    success_count += 1
-                    attack_success_count += 1
-                    total_success_attacks += 1
-                    total_success_time += (time.time() - start_time)
-                    total_success_query += success_query
-
+            if seed_org_result.label != seed_cps_result.label:
+                already_diff_count += 1
+                success_count += 1
                 total_count += 1
+                continue
+
+            attack_trial_count += 1
+            start_time = time.time()
+            _, _ = covered_states.update_function(np.hstack([seed_org_result.vec, seed_cps_result.vec]))
+            best_fitness_value = StateFitnessValue(False, 0)
+            latest_img = np.copy(raw_seed_img)
+            last_mutation_operator = None
+
+            found = False
+            success_query = 0
+            for iteration in range(1, attack_mode_a_maxit + 1):
+                if time.time() - start_time > attack_mode_a_timeout:
+                    break
+
+                m = p_mutation.choose_mutator(last_mutation_operator)
+                m.total += 1
+
+                new_img = m.mut(np.copy(latest_img))
+                org_result, cps_result = predict_pair(org_model, cps_model, new_img)
+
+                if org_result.label != cps_result.label:
+                    m.delta_bigger_than_zero += 1
+                    found = True
+                    success_query = iteration
+                    break
+
+                diff_prob = scalar_prob(org_result.prob) - scalar_prob(cps_result.prob)
+                coverage = np.hstack([org_result.vec, cps_result.vec])
+                add_to_corpus, _ = covered_states.update_function(coverage)
+                fitness_value = StateFitnessValue(add_to_corpus, diff_prob)
+
+                if fitness_value.better_than(best_fitness_value):
+                    best_fitness_value = fitness_value
+                    m.delta_bigger_than_zero += 1
+                    latest_img = np.copy(new_img)
+                    last_mutation_operator = m.name
+
+            if found:
+                success_count += 1
+                attack_success_count += 1
+                total_success_attacks += 1
+                total_success_time += (time.time() - start_time)
+                total_success_query += success_query
+
+            total_count += 1
 
         run_success_rate = attack_success_count / attack_trial_count if attack_trial_count > 0 else 0.0
         run_success_rates.append(run_success_rate)
