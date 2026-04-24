@@ -1,1 +1,0 @@
-These models are built using Pytorch.

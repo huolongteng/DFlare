@@ -1,1 +1,0 @@
-Planning to build 15 pairs of models using Intel AI Lab. But other packages are available as well?
