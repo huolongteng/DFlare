@@ -1,0 +1,34 @@
+{
+  "dataset": "cifar",
+  "arch": "resnet20",
+  "method": "quant",
+  "method_note": "PyTorch torch.ao FX graph mode post-training static quantization with calibration data.",
+  "source_checkpoint": "models_/CIFAR-10/resnet20.pth",
+  "baseline_accuracy": 0.9246,
+  "compressed_accuracy": 0.9159,
+  "accuracy_delta": -0.00869999999999993,
+  "baseline_param_count": 272474,
+  "compressed_param_count": 0,
+  "param_ratio": 0.0,
+  "baseline_state_tensor_bytes": 1096336,
+  "compressed_state_tensor_bytes": 273776,
+  "tensor_ratio": 0.2497190642284847,
+  "saved_model_bytes": 336005,
+  "saved_state_dict_bytes": 333089,
+  "file_ratio": 0.29253514533706765,
+  "artifacts": {
+    "model": "models_\\CIFAR-10\\resnet20_quant.pt",
+    "state_dict": "models_\\CIFAR-10\\resnet20_quant.pth",
+    "report": "models_\\CIFAR-10\\resnet20_quant.json"
+  },
+  "settings": {
+    "kd_epochs": 0,
+    "kd_alpha": 0.0,
+    "kd_temperature": 0.0,
+    "prune_ratio": null,
+    "finetune_epochs": 0,
+    "quant_backend": "onednn",
+    "calib_mode": "dataset",
+    "calib_batches": 16
+  }
+}

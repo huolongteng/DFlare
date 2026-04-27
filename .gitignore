@@ -6,4 +6,7 @@ __pycache__/
 data/
 .venv/
 nc_workspace/
-models_/
+CODEX_HANDOFF.md
+evaluate_compressed_models.py
+compression_eval/
+torch_compress_models.py

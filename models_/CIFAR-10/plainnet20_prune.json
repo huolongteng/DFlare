@@ -1,0 +1,34 @@
+{
+  "dataset": "cifar",
+  "arch": "plainnet20",
+  "method": "prune",
+  "method_note": "torch-pruning structured channel pruning using L2 magnitude importance, followed by short fine-tuning.",
+  "source_checkpoint": "models_/CIFAR-10/plainnet20.pth",
+  "baseline_accuracy": 0.9109,
+  "compressed_accuracy": 0.8506,
+  "accuracy_delta": -0.06030000000000002,
+  "baseline_param_count": 269722,
+  "compressed_param_count": 128017,
+  "param_ratio": 0.47462572574725087,
+  "baseline_state_tensor_bytes": 1084544,
+  "compressed_state_tensor_bytes": 516004,
+  "tensor_ratio": 0.4757796825209489,
+  "saved_model_bytes": 561953,
+  "saved_state_dict_bytes": 551777,
+  "file_ratio": 0.4914482831102367,
+  "artifacts": {
+    "model": "models_\\CIFAR-10\\plainnet20_prune.pt",
+    "state_dict": "models_\\CIFAR-10\\plainnet20_prune.pth",
+    "report": "models_\\CIFAR-10\\plainnet20_prune.json"
+  },
+  "settings": {
+    "kd_epochs": 0,
+    "kd_alpha": 0.0,
+    "kd_temperature": 0.0,
+    "prune_ratio": 0.3,
+    "finetune_epochs": 3,
+    "quant_backend": null,
+    "calib_mode": null,
+    "calib_batches": 0
+  }
+}

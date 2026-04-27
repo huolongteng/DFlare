@@ -1,0 +1,34 @@
+{
+  "dataset": "cifar",
+  "arch": "vgg16",
+  "method": "quant",
+  "method_note": "PyTorch torch.ao FX graph mode post-training static quantization with calibration data.",
+  "source_checkpoint": "models_/CIFAR-10/vgg16.pth",
+  "baseline_accuracy": 0.8797,
+  "compressed_accuracy": 0.872,
+  "accuracy_delta": -0.00770000000000004,
+  "baseline_param_count": 14728266,
+  "compressed_param_count": 0,
+  "param_ratio": 0.0,
+  "baseline_state_tensor_bytes": 58946960,
+  "compressed_state_tensor_bytes": 14727540,
+  "tensor_ratio": 0.24984392749006903,
+  "saved_model_bytes": 14827509,
+  "saved_state_dict_bytes": 14826577,
+  "file_ratio": 0.2514157056429726,
+  "artifacts": {
+    "model": "models_\\CIFAR-10\\vgg16_quant.pt",
+    "state_dict": "models_\\CIFAR-10\\vgg16_quant.pth",
+    "report": "models_\\CIFAR-10\\vgg16_quant.json"
+  },
+  "settings": {
+    "kd_epochs": 0,
+    "kd_alpha": 0.0,
+    "kd_temperature": 0.0,
+    "prune_ratio": null,
+    "finetune_epochs": 0,
+    "quant_backend": "onednn",
+    "calib_mode": "dataset",
+    "calib_batches": 16
+  }
+}

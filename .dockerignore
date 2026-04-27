@@ -6,6 +6,6 @@ __pycache__/
 *.pyo
 .pytest_cache/
 data/
-models_/
+
 nc_workspace/
 results/

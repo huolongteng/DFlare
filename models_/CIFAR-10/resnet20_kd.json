@@ -1,0 +1,35 @@
+{
+  "dataset": "cifar",
+  "arch": "resnet20",
+  "method": "kd",
+  "method_note": "Self-written Hinton-style knowledge distillation. MNIST uses compact student nets; CIFAR uses a structurally slimmed teacher initialized as the student, then fine-tunes with CE plus KL divergence.",
+  "source_checkpoint": "models_/CIFAR-10/resnet20.pth",
+  "baseline_accuracy": 0.9246,
+  "compressed_accuracy": 0.8421,
+  "accuracy_delta": -0.08250000000000002,
+  "baseline_param_count": 272474,
+  "compressed_param_count": 68786,
+  "param_ratio": 0.252449775024406,
+  "baseline_state_tensor_bytes": 1096336,
+  "compressed_state_tensor_bytes": 278448,
+  "tensor_ratio": 0.2539805315158856,
+  "saved_model_bytes": 332375,
+  "saved_state_dict_bytes": 320215,
+  "file_ratio": 0.28122856523064144,
+  "artifacts": {
+    "model": "models_\\CIFAR-10\\resnet20_kd.pt",
+    "state_dict": "models_\\CIFAR-10\\resnet20_kd.pth",
+    "report": "models_\\CIFAR-10\\resnet20_kd.json"
+  },
+  "settings": {
+    "kd_epochs": 4,
+    "kd_alpha": 0.7,
+    "kd_temperature": 4.0,
+    "kd_prune_ratio": 0.5,
+    "prune_ratio": null,
+    "finetune_epochs": 0,
+    "quant_backend": null,
+    "calib_mode": null,
+    "calib_batches": 0
+  }
+}

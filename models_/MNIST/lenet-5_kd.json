@@ -1,0 +1,34 @@
+{
+  "dataset": "mnist",
+  "arch": "lenet-5",
+  "method": "kd",
+  "method_note": "Self-written Hinton-style knowledge distillation: cross entropy plus KL divergence from the original model teacher.",
+  "source_checkpoint": "models_/MNIST/lenet-5.pth",
+  "baseline_accuracy": 0.9461,
+  "compressed_accuracy": 0.9734,
+  "accuracy_delta": 0.02729999999999999,
+  "baseline_param_count": 61706,
+  "compressed_param_count": 11986,
+  "param_ratio": 0.19424367160405795,
+  "baseline_state_tensor_bytes": 246824,
+  "compressed_state_tensor_bytes": 47944,
+  "tensor_ratio": 0.19424367160405795,
+  "saved_model_bytes": 54133,
+  "saved_state_dict_bytes": 52085,
+  "file_ratio": 0.20781713209564734,
+  "artifacts": {
+    "model": "models_\\MNIST\\lenet-5_kd.pt",
+    "state_dict": "models_\\MNIST\\lenet-5_kd.pth",
+    "report": "models_\\MNIST\\lenet-5_kd.json"
+  },
+  "settings": {
+    "kd_epochs": 4,
+    "kd_alpha": 0.7,
+    "kd_temperature": 4.0,
+    "prune_ratio": null,
+    "finetune_epochs": 0,
+    "quant_backend": null,
+    "calib_mode": null,
+    "calib_batches": 0
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "dataset": "mnist",
+  "arch": "lenet-4",
+  "method": "prune",
+  "method_note": "torch-pruning structured channel pruning using L2 magnitude importance, followed by short fine-tuning.",
+  "source_checkpoint": "models_/MNIST/lenet-4.pth",
+  "baseline_accuracy": 0.9808,
+  "compressed_accuracy": 0.9805,
+  "accuracy_delta": -0.00029999999999996696,
+  "baseline_param_count": 3246,
+  "compressed_param_count": 1750,
+  "param_ratio": 0.5391250770178682,
+  "baseline_state_tensor_bytes": 12984,
+  "compressed_state_tensor_bytes": 7000,
+  "tensor_ratio": 0.5391250770178682,
+  "saved_model_bytes": 11741,
+  "saved_state_dict_bytes": 10077,
+  "file_ratio": 0.636616337102786,
+  "artifacts": {
+    "model": "models_\\MNIST\\lenet-4_prune.pt",
+    "state_dict": "models_\\MNIST\\lenet-4_prune.pth",
+    "report": "models_\\MNIST\\lenet-4_prune.json"
+  },
+  "settings": {
+    "kd_epochs": 0,
+    "kd_alpha": 0.0,
+    "kd_temperature": 0.0,
+    "prune_ratio": 0.3,
+    "finetune_epochs": 3,
+    "quant_backend": null,
+    "calib_mode": null,
+    "calib_batches": 0
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "dataset": "cifar",
+  "arch": "vgg16",
+  "method": "prune",
+  "method_note": "torch-pruning structured channel pruning using L2 magnitude importance, followed by short fine-tuning.",
+  "source_checkpoint": "models_/CIFAR-10/vgg16.pth",
+  "baseline_accuracy": 0.8797,
+  "compressed_accuracy": 0.8294,
+  "accuracy_delta": -0.05030000000000001,
+  "baseline_param_count": 14728266,
+  "compressed_param_count": 7201823,
+  "param_ratio": 0.4889796938757081,
+  "baseline_state_tensor_bytes": 58946960,
+  "compressed_state_tensor_bytes": 28831004,
+  "tensor_ratio": 0.4891007780553908,
+  "saved_model_bytes": 28870040,
+  "saved_state_dict_bytes": 28859992,
+  "file_ratio": 0.48938168624697015,
+  "artifacts": {
+    "model": "models_\\CIFAR-10\\vgg16_prune.pt",
+    "state_dict": "models_\\CIFAR-10\\vgg16_prune.pth",
+    "report": "models_\\CIFAR-10\\vgg16_prune.json"
+  },
+  "settings": {
+    "kd_epochs": 0,
+    "kd_alpha": 0.0,
+    "kd_temperature": 0.0,
+    "prune_ratio": 0.3,
+    "finetune_epochs": 3,
+    "quant_backend": null,
+    "calib_mode": null,
+    "calib_batches": 0
+  }
+}

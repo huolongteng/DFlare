@@ -1,0 +1,104 @@
+[
+  {
+    "dataset": "mnist",
+    "arch": "lenet-5",
+    "method": "kd",
+    "method_note": "Self-written Hinton-style knowledge distillation: cross entropy plus KL divergence from the original model teacher.",
+    "source_checkpoint": "models_/MNIST/lenet-5.pth",
+    "baseline_accuracy": 0.9461,
+    "compressed_accuracy": 0.9734,
+    "accuracy_delta": 0.02729999999999999,
+    "baseline_param_count": 61706,
+    "compressed_param_count": 11986,
+    "param_ratio": 0.19424367160405795,
+    "baseline_state_tensor_bytes": 246824,
+    "compressed_state_tensor_bytes": 47944,
+    "tensor_ratio": 0.19424367160405795,
+    "saved_model_bytes": 54133,
+    "saved_state_dict_bytes": 52085,
+    "file_ratio": 0.20781713209564734,
+    "artifacts": {
+      "model": "models_\\MNIST\\lenet-5_kd.pt",
+      "state_dict": "models_\\MNIST\\lenet-5_kd.pth",
+      "report": "models_\\MNIST\\lenet-5_kd.json"
+    },
+    "settings": {
+      "kd_epochs": 4,
+      "kd_alpha": 0.7,
+      "kd_temperature": 4.0,
+      "prune_ratio": null,
+      "finetune_epochs": 0,
+      "quant_backend": null,
+      "calib_mode": null,
+      "calib_batches": 0
+    }
+  },
+  {
+    "dataset": "mnist",
+    "arch": "lenet-5",
+    "method": "quant",
+    "method_note": "PyTorch torch.ao FX graph mode post-training static quantization with calibration data.",
+    "source_checkpoint": "models_/MNIST/lenet-5.pth",
+    "baseline_accuracy": 0.9461,
+    "compressed_accuracy": 0.9468,
+    "accuracy_delta": 0.0006999999999999229,
+    "baseline_param_count": 61706,
+    "compressed_param_count": 0,
+    "param_ratio": 0.0,
+    "baseline_state_tensor_bytes": 246824,
+    "compressed_state_tensor_bytes": 2710,
+    "tensor_ratio": 0.010979483356561761,
+    "saved_model_bytes": 78857,
+    "saved_state_dict_bytes": 76135,
+    "file_ratio": 0.3037757003379497,
+    "artifacts": {
+      "model": "models_\\MNIST\\lenet-5_quant.pt",
+      "state_dict": "models_\\MNIST\\lenet-5_quant.pth",
+      "report": "models_\\MNIST\\lenet-5_quant.json"
+    },
+    "settings": {
+      "kd_epochs": 0,
+      "kd_alpha": 0.0,
+      "kd_temperature": 0.0,
+      "prune_ratio": null,
+      "finetune_epochs": 0,
+      "quant_backend": "onednn",
+      "calib_mode": "dataset",
+      "calib_batches": 16
+    }
+  },
+  {
+    "dataset": "mnist",
+    "arch": "lenet-5",
+    "method": "prune",
+    "method_note": "torch-pruning structured channel pruning using L2 magnitude importance, followed by short fine-tuning.",
+    "source_checkpoint": "models_/MNIST/lenet-5.pth",
+    "baseline_accuracy": 0.9461,
+    "compressed_accuracy": 0.9887,
+    "accuracy_delta": 0.04259999999999997,
+    "baseline_param_count": 61706,
+    "compressed_param_count": 41943,
+    "param_ratio": 0.6797232035782582,
+    "baseline_state_tensor_bytes": 246824,
+    "compressed_state_tensor_bytes": 167772,
+    "tensor_ratio": 0.6797232035782582,
+    "saved_model_bytes": 173861,
+    "saved_state_dict_bytes": 171813,
+    "file_ratio": 0.6855272135307566,
+    "artifacts": {
+      "model": "models_\\MNIST\\lenet-5_prune.pt",
+      "state_dict": "models_\\MNIST\\lenet-5_prune.pth",
+      "report": "models_\\MNIST\\lenet-5_prune.json"
+    },
+    "settings": {
+      "kd_epochs": 0,
+      "kd_alpha": 0.0,
+      "kd_temperature": 0.0,
+      "prune_ratio": 0.3,
+      "finetune_epochs": 3,
+      "quant_backend": null,
+      "calib_mode": null,
+      "calib_batches": 0
+    }
+  }
+]
