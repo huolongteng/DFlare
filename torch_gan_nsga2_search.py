@@ -20,9 +20,9 @@ suppress_known_runtime_warnings()
 
 def parse_args():
     parser = argparse.ArgumentParser("GAN latent NSGA-II search for original + compressed models")
-    parser.add_argument("--dataset", choices=["mnist", "cifar"], required=True)
+    parser.add_argument("--dataset", choices=["mnist", "fashion", "cifar"], required=True)
     parser.add_argument("--arch", required=True,
-                        help="mnist: lenet-4, lenet-5, simplecnn; cifar: resnet20, plainnet20, vgg16")
+                        help="mnist: lenet-4, lenet-5, simplecnn; fashion: lenet-5, simplecnn, resnet8; cifar: resnet20, plainnet20, vgg16")
     parser.add_argument("--cps-type", choices=["kd", "quant", "prune"], default="kd")
     parser.add_argument("--num", type=int, default=100, help="Number of independent NSGA-II trials.")
     parser.add_argument("--seed", type=int, default=0)

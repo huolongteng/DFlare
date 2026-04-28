@@ -1,0 +1,35 @@
+{
+  "dataset": "fashion",
+  "arch": "simplecnn",
+  "method": "kd",
+  "method_note": "Self-written Hinton-style knowledge distillation. MNIST uses compact student nets; CIFAR uses a structurally slimmed teacher initialized as the student, then fine-tunes with CE plus KL divergence.",
+  "source_checkpoint": "models_\\Fashion-MNIST\\simplecnn.pth",
+  "baseline_accuracy": 0.8826,
+  "compressed_accuracy": 0.8301,
+  "accuracy_delta": -0.0525000000000001,
+  "baseline_param_count": 62346,
+  "compressed_param_count": 5994,
+  "param_ratio": 0.09614089115580791,
+  "baseline_state_tensor_bytes": 249384,
+  "compressed_state_tensor_bytes": 23976,
+  "tensor_ratio": 0.09614089115580791,
+  "saved_model_bytes": 28689,
+  "saved_state_dict_bytes": 27025,
+  "file_ratio": 0.107073380428452,
+  "artifacts": {
+    "model": "models_\\Fashion-MNIST\\simplecnn_kd.pt",
+    "state_dict": "models_\\Fashion-MNIST\\simplecnn_kd.pth",
+    "report": "models_\\Fashion-MNIST\\simplecnn_kd.json"
+  },
+  "settings": {
+    "kd_epochs": 4,
+    "kd_alpha": 0.7,
+    "kd_temperature": 4.0,
+    "kd_prune_ratio": null,
+    "prune_ratio": null,
+    "finetune_epochs": 0,
+    "quant_backend": null,
+    "calib_mode": null,
+    "calib_batches": 0
+  }
+}

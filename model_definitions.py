@@ -91,10 +91,10 @@ class BasicBlock(nn.Module):
         return out
 
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10):
+    def __init__(self, block, num_blocks, num_classes=10, in_channels=3):
         super(ResNet, self).__init__()
         self.in_planes = 16
-        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False)
+        self.conv1 = nn.Conv2d(in_channels, 16, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(16)
         self.layer1 = self._make_layer(block, 16, num_blocks[0], stride=1)
         self.layer2 = self._make_layer(block, 32, num_blocks[1], stride=2)
@@ -124,11 +124,16 @@ def ResNet20():
     return ResNet(BasicBlock, [3, 3, 3])
 
 
+def ResNet8Fashion():
+    return ResNet(BasicBlock, [1, 1, 1], in_channels=1)
+
+
 class ResNetStudent(nn.Module):
-    def __init__(self, block=BasicBlock, num_blocks=(1, 1, 1), base_channels=8, num_classes=10):
+    def __init__(self, block=BasicBlock, num_blocks=(1, 1, 1), base_channels=8,
+                 num_classes=10, in_channels=3):
         super(ResNetStudent, self).__init__()
         self.in_planes = base_channels
-        self.conv1 = nn.Conv2d(3, base_channels, kernel_size=3, stride=1, padding=1, bias=False)
+        self.conv1 = nn.Conv2d(in_channels, base_channels, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(base_channels)
         self.layer1 = self._make_layer(block, base_channels, num_blocks[0], stride=1)
         self.layer2 = self._make_layer(block, base_channels * 2, num_blocks[1], stride=2)
@@ -341,9 +346,14 @@ def KDResNet20():
     return ResNetStudent(BasicBlock, (1, 1, 1), base_channels=8)
 
 
+def KDResNet8Fashion():
+    return ResNetStudent(BasicBlock, (1, 1, 1), base_channels=6, in_channels=1)
+
+
 def KDPlainNet20():
     return PlainNetStudent(PlainBlock, (1, 1, 1), base_channels=8)
 
 
 def KDVGG16():
     return VGGStudent((16, 32, 64, 128, 128))
+

@@ -70,9 +70,9 @@ MODEL_PATHS = {
 
 def parse_args():
     parser = argparse.ArgumentParser("Local PyTorch DFlare runner for original + compressed models")
-    parser.add_argument("--dataset", choices=["mnist", "cifar"], required=True)
+    parser.add_argument("--dataset", choices=["mnist", "fashion", "cifar"], required=True)
     parser.add_argument("--arch", required=True,
-                        help="mnist: lenet-4, lenet-5, simplecnn; cifar: resnet20, plainnet20, vgg16")
+                        help="mnist: lenet-4, lenet-5, simplecnn; fashion: lenet-5, simplecnn, resnet8; cifar: resnet20, plainnet20, vgg16")
     parser.add_argument("--cps-type", choices=["kd", "quant", "prune"], default="kd")
     parser.add_argument("--maxit", type=int, default=100)
     parser.add_argument("--num", type=int, default=100)

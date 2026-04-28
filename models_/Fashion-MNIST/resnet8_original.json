@@ -1,0 +1,40 @@
+{
+  "dataset": "fashion",
+  "dataset_dir": "Fashion-MNIST",
+  "arch": "resnet8",
+  "artifact": "models_\\Fashion-MNIST\\resnet8.pth",
+  "epochs": 5,
+  "train_samples": 0,
+  "test_samples": 0,
+  "accuracy": 0.8912,
+  "param_count": 77754,
+  "state_tensor_bytes": 313776,
+  "saved_state_dict_bytes": 331259,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.7289584549109142,
+      "test_accuracy": 0.8205
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.38428702241579693,
+      "test_accuracy": 0.8354
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.319789465602239,
+      "test_accuracy": 0.8813
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.28359807643890383,
+      "test_accuracy": 0.8839
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.2562523511568705,
+      "test_accuracy": 0.8912
+    }
+  ]
+}

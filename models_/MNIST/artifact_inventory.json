@@ -1,0 +1,957 @@
+{
+  "dataset": "mnist",
+  "dataset_dir": "MNIST",
+  "models_root": "models_\\MNIST",
+  "architectures": {
+    "lenet-4": {
+      "original": {
+        "path": "models_\\MNIST\\lenet-4.pth",
+        "exists": true,
+        "bytes": 15765
+      },
+      "original_report": {
+        "dataset": "mnist",
+        "dataset_dir": "MNIST",
+        "arch": "lenet-4",
+        "artifact": "models_\\MNIST\\lenet-4.pth",
+        "epochs": 8,
+        "train_samples": 0,
+        "test_samples": 0,
+        "accuracy": 0.9811,
+        "param_count": 3246,
+        "state_tensor_bytes": 12984,
+        "saved_state_dict_bytes": 15765,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.8041755318323771,
+            "test_accuracy": 0.914
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.22904832286834717,
+            "test_accuracy": 0.9497
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.14839794854323068,
+            "test_accuracy": 0.9648
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.11521427059173583,
+            "test_accuracy": 0.9714
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.09823134094079336,
+            "test_accuracy": 0.975
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.08840056229432423,
+            "test_accuracy": 0.977
+          },
+          {
+            "epoch": 7,
+            "train_loss": 0.08036019299825033,
+            "test_accuracy": 0.9774
+          },
+          {
+            "epoch": 8,
+            "train_loss": 0.07495825779438019,
+            "test_accuracy": 0.9811
+          }
+        ]
+      },
+      "compressed": {
+        "kd": {
+          "model": {
+            "path": "models_\\MNIST\\lenet-4_kd.pt",
+            "exists": true,
+            "bytes": 10681
+          },
+          "state_dict": {
+            "path": "models_\\MNIST\\lenet-4_kd.pth",
+            "exists": true,
+            "bytes": 9017
+          },
+          "report": {
+            "dataset": "mnist",
+            "arch": "lenet-4",
+            "method": "kd",
+            "method_note": "Self-written Hinton-style knowledge distillation. MNIST uses compact student nets; CIFAR uses a structurally slimmed teacher initialized as the student, then fine-tunes with CE plus KL divergence.",
+            "source_checkpoint": "models_\\MNIST\\lenet-4.pth",
+            "baseline_accuracy": 0.9811,
+            "compressed_accuracy": 0.9599,
+            "accuracy_delta": -0.021199999999999997,
+            "baseline_param_count": 3246,
+            "compressed_param_count": 1504,
+            "param_ratio": 0.46333949476278496,
+            "baseline_state_tensor_bytes": 12984,
+            "compressed_state_tensor_bytes": 6016,
+            "tensor_ratio": 0.46333949476278496,
+            "saved_model_bytes": 10681,
+            "saved_state_dict_bytes": 9017,
+            "file_ratio": 0.5719632096416112,
+            "artifacts": {
+              "model": "models_\\MNIST\\lenet-4_kd.pt",
+              "state_dict": "models_\\MNIST\\lenet-4_kd.pth",
+              "report": "models_\\MNIST\\lenet-4_kd.json"
+            },
+            "settings": {
+              "kd_epochs": 4,
+              "kd_alpha": 0.7,
+              "kd_temperature": 4.0,
+              "kd_prune_ratio": null,
+              "prune_ratio": null,
+              "finetune_epochs": 0,
+              "quant_backend": null,
+              "calib_mode": null,
+              "calib_batches": 0
+            }
+          }
+        },
+        "quant": {
+          "model": {
+            "path": "models_\\MNIST\\lenet-4_quant.pt",
+            "exists": true,
+            "bytes": 12977
+          },
+          "state_dict": {
+            "path": "models_\\MNIST\\lenet-4_quant.pth",
+            "exists": true,
+            "bytes": 10371
+          },
+          "report": {
+            "dataset": "mnist",
+            "arch": "lenet-4",
+            "method": "quant",
+            "method_note": "PyTorch torch.ao FX graph mode post-training static quantization with calibration data.",
+            "source_checkpoint": "models_\\MNIST\\lenet-4.pth",
+            "baseline_accuracy": 0.9811,
+            "compressed_accuracy": 0.9809,
+            "accuracy_delta": -0.00019999999999997797,
+            "baseline_param_count": 3246,
+            "compressed_param_count": 0,
+            "param_ratio": 0.0,
+            "baseline_state_tensor_bytes": 12984,
+            "compressed_state_tensor_bytes": 1412,
+            "tensor_ratio": 0.10874922982131854,
+            "saved_model_bytes": 12977,
+            "saved_state_dict_bytes": 10371,
+            "file_ratio": 0.657849666983825,
+            "artifacts": {
+              "model": "models_\\MNIST\\lenet-4_quant.pt",
+              "state_dict": "models_\\MNIST\\lenet-4_quant.pth",
+              "report": "models_\\MNIST\\lenet-4_quant.json"
+            },
+            "settings": {
+              "kd_epochs": 0,
+              "kd_alpha": 0.0,
+              "kd_temperature": 0.0,
+              "kd_prune_ratio": null,
+              "prune_ratio": null,
+              "finetune_epochs": 0,
+              "quant_backend": "onednn",
+              "calib_mode": "dataset",
+              "calib_batches": 235
+            }
+          }
+        },
+        "prune": {
+          "model": {
+            "path": "models_\\MNIST\\lenet-4_prune.pt",
+            "exists": true,
+            "bytes": 11741
+          },
+          "state_dict": {
+            "path": "models_\\MNIST\\lenet-4_prune.pth",
+            "exists": true,
+            "bytes": 10077
+          },
+          "report": {
+            "dataset": "mnist",
+            "arch": "lenet-4",
+            "method": "prune",
+            "method_note": "torch-pruning structured channel pruning using L2 magnitude importance, followed by short fine-tuning.",
+            "source_checkpoint": "models_\\MNIST\\lenet-4.pth",
+            "baseline_accuracy": 0.9811,
+            "compressed_accuracy": 0.973,
+            "accuracy_delta": -0.008099999999999996,
+            "baseline_param_count": 3246,
+            "compressed_param_count": 1750,
+            "param_ratio": 0.5391250770178682,
+            "baseline_state_tensor_bytes": 12984,
+            "compressed_state_tensor_bytes": 7000,
+            "tensor_ratio": 0.5391250770178682,
+            "saved_model_bytes": 11741,
+            "saved_state_dict_bytes": 10077,
+            "file_ratio": 0.6392007611798287,
+            "artifacts": {
+              "model": "models_\\MNIST\\lenet-4_prune.pt",
+              "state_dict": "models_\\MNIST\\lenet-4_prune.pth",
+              "report": "models_\\MNIST\\lenet-4_prune.json"
+            },
+            "settings": {
+              "kd_epochs": 0,
+              "kd_alpha": 0.0,
+              "kd_temperature": 0.0,
+              "kd_prune_ratio": null,
+              "prune_ratio": 0.3,
+              "finetune_epochs": 3,
+              "quant_backend": null,
+              "calib_mode": null,
+              "calib_batches": 0
+            }
+          }
+        }
+      },
+      "compression_summary": [
+        {
+          "dataset": "mnist",
+          "arch": "lenet-4",
+          "method": "kd",
+          "method_note": "Self-written Hinton-style knowledge distillation. MNIST uses compact student nets; CIFAR uses a structurally slimmed teacher initialized as the student, then fine-tunes with CE plus KL divergence.",
+          "source_checkpoint": "models_\\MNIST\\lenet-4.pth",
+          "baseline_accuracy": 0.9811,
+          "compressed_accuracy": 0.9599,
+          "accuracy_delta": -0.021199999999999997,
+          "baseline_param_count": 3246,
+          "compressed_param_count": 1504,
+          "param_ratio": 0.46333949476278496,
+          "baseline_state_tensor_bytes": 12984,
+          "compressed_state_tensor_bytes": 6016,
+          "tensor_ratio": 0.46333949476278496,
+          "saved_model_bytes": 10681,
+          "saved_state_dict_bytes": 9017,
+          "file_ratio": 0.5719632096416112,
+          "artifacts": {
+            "model": "models_\\MNIST\\lenet-4_kd.pt",
+            "state_dict": "models_\\MNIST\\lenet-4_kd.pth",
+            "report": "models_\\MNIST\\lenet-4_kd.json"
+          },
+          "settings": {
+            "kd_epochs": 4,
+            "kd_alpha": 0.7,
+            "kd_temperature": 4.0,
+            "kd_prune_ratio": null,
+            "prune_ratio": null,
+            "finetune_epochs": 0,
+            "quant_backend": null,
+            "calib_mode": null,
+            "calib_batches": 0
+          }
+        },
+        {
+          "dataset": "mnist",
+          "arch": "lenet-4",
+          "method": "quant",
+          "method_note": "PyTorch torch.ao FX graph mode post-training static quantization with calibration data.",
+          "source_checkpoint": "models_\\MNIST\\lenet-4.pth",
+          "baseline_accuracy": 0.9811,
+          "compressed_accuracy": 0.9809,
+          "accuracy_delta": -0.00019999999999997797,
+          "baseline_param_count": 3246,
+          "compressed_param_count": 0,
+          "param_ratio": 0.0,
+          "baseline_state_tensor_bytes": 12984,
+          "compressed_state_tensor_bytes": 1412,
+          "tensor_ratio": 0.10874922982131854,
+          "saved_model_bytes": 12977,
+          "saved_state_dict_bytes": 10371,
+          "file_ratio": 0.657849666983825,
+          "artifacts": {
+            "model": "models_\\MNIST\\lenet-4_quant.pt",
+            "state_dict": "models_\\MNIST\\lenet-4_quant.pth",
+            "report": "models_\\MNIST\\lenet-4_quant.json"
+          },
+          "settings": {
+            "kd_epochs": 0,
+            "kd_alpha": 0.0,
+            "kd_temperature": 0.0,
+            "kd_prune_ratio": null,
+            "prune_ratio": null,
+            "finetune_epochs": 0,
+            "quant_backend": "onednn",
+            "calib_mode": "dataset",
+            "calib_batches": 235
+          }
+        },
+        {
+          "dataset": "mnist",
+          "arch": "lenet-4",
+          "method": "prune",
+          "method_note": "torch-pruning structured channel pruning using L2 magnitude importance, followed by short fine-tuning.",
+          "source_checkpoint": "models_\\MNIST\\lenet-4.pth",
+          "baseline_accuracy": 0.9811,
+          "compressed_accuracy": 0.973,
+          "accuracy_delta": -0.008099999999999996,
+          "baseline_param_count": 3246,
+          "compressed_param_count": 1750,
+          "param_ratio": 0.5391250770178682,
+          "baseline_state_tensor_bytes": 12984,
+          "compressed_state_tensor_bytes": 7000,
+          "tensor_ratio": 0.5391250770178682,
+          "saved_model_bytes": 11741,
+          "saved_state_dict_bytes": 10077,
+          "file_ratio": 0.6392007611798287,
+          "artifacts": {
+            "model": "models_\\MNIST\\lenet-4_prune.pt",
+            "state_dict": "models_\\MNIST\\lenet-4_prune.pth",
+            "report": "models_\\MNIST\\lenet-4_prune.json"
+          },
+          "settings": {
+            "kd_epochs": 0,
+            "kd_alpha": 0.0,
+            "kd_temperature": 0.0,
+            "kd_prune_ratio": null,
+            "prune_ratio": 0.3,
+            "finetune_epochs": 3,
+            "quant_backend": null,
+            "calib_mode": null,
+            "calib_batches": 0
+          }
+        }
+      ]
+    },
+    "lenet-5": {
+      "original": {
+        "path": "models_\\MNIST\\lenet-5.pth",
+        "exists": true,
+        "bytes": 250501
+      },
+      "original_report": {
+        "dataset": "mnist",
+        "dataset_dir": "MNIST",
+        "arch": "lenet-5",
+        "artifact": "models_\\MNIST\\lenet-5.pth",
+        "epochs": 8,
+        "train_samples": 0,
+        "test_samples": 0,
+        "accuracy": 0.9831,
+        "param_count": 61706,
+        "state_tensor_bytes": 246824,
+        "saved_state_dict_bytes": 250501,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.7005058000723521,
+            "test_accuracy": 0.9212
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.21981438300609588,
+            "test_accuracy": 0.9523
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.14141926381985345,
+            "test_accuracy": 0.9672
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.10420246436595917,
+            "test_accuracy": 0.9733
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.0853853667140007,
+            "test_accuracy": 0.9789
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.0730178662498792,
+            "test_accuracy": 0.9809
+          },
+          {
+            "epoch": 7,
+            "train_loss": 0.0645201666533947,
+            "test_accuracy": 0.9831
+          },
+          {
+            "epoch": 8,
+            "train_loss": 0.055626091170310976,
+            "test_accuracy": 0.9831
+          }
+        ]
+      },
+      "compressed": {
+        "kd": {
+          "model": {
+            "path": "models_\\MNIST\\lenet-5_kd.pt",
+            "exists": true,
+            "bytes": 54133
+          },
+          "state_dict": {
+            "path": "models_\\MNIST\\lenet-5_kd.pth",
+            "exists": true,
+            "bytes": 52085
+          },
+          "report": {
+            "dataset": "mnist",
+            "arch": "lenet-5",
+            "method": "kd",
+            "method_note": "Self-written Hinton-style knowledge distillation. MNIST uses compact student nets; CIFAR uses a structurally slimmed teacher initialized as the student, then fine-tunes with CE plus KL divergence.",
+            "source_checkpoint": "models_\\MNIST\\lenet-5.pth",
+            "baseline_accuracy": 0.9831,
+            "compressed_accuracy": 0.9584,
+            "accuracy_delta": -0.024699999999999944,
+            "baseline_param_count": 61706,
+            "compressed_param_count": 11986,
+            "param_ratio": 0.19424367160405795,
+            "baseline_state_tensor_bytes": 246824,
+            "compressed_state_tensor_bytes": 47944,
+            "tensor_ratio": 0.19424367160405795,
+            "saved_model_bytes": 54133,
+            "saved_state_dict_bytes": 52085,
+            "file_ratio": 0.20792332166338656,
+            "artifacts": {
+              "model": "models_\\MNIST\\lenet-5_kd.pt",
+              "state_dict": "models_\\MNIST\\lenet-5_kd.pth",
+              "report": "models_\\MNIST\\lenet-5_kd.json"
+            },
+            "settings": {
+              "kd_epochs": 4,
+              "kd_alpha": 0.7,
+              "kd_temperature": 4.0,
+              "kd_prune_ratio": null,
+              "prune_ratio": null,
+              "finetune_epochs": 0,
+              "quant_backend": null,
+              "calib_mode": null,
+              "calib_batches": 0
+            }
+          }
+        },
+        "quant": {
+          "model": {
+            "path": "models_\\MNIST\\lenet-5_quant.pt",
+            "exists": true,
+            "bytes": 78857
+          },
+          "state_dict": {
+            "path": "models_\\MNIST\\lenet-5_quant.pth",
+            "exists": true,
+            "bytes": 76135
+          },
+          "report": {
+            "dataset": "mnist",
+            "arch": "lenet-5",
+            "method": "quant",
+            "method_note": "PyTorch torch.ao FX graph mode post-training static quantization with calibration data.",
+            "source_checkpoint": "models_\\MNIST\\lenet-5.pth",
+            "baseline_accuracy": 0.9831,
+            "compressed_accuracy": 0.9826,
+            "accuracy_delta": -0.0004999999999999449,
+            "baseline_param_count": 61706,
+            "compressed_param_count": 0,
+            "param_ratio": 0.0,
+            "baseline_state_tensor_bytes": 246824,
+            "compressed_state_tensor_bytes": 2710,
+            "tensor_ratio": 0.010979483356561761,
+            "saved_model_bytes": 78857,
+            "saved_state_dict_bytes": 76135,
+            "file_ratio": 0.30393092243144737,
+            "artifacts": {
+              "model": "models_\\MNIST\\lenet-5_quant.pt",
+              "state_dict": "models_\\MNIST\\lenet-5_quant.pth",
+              "report": "models_\\MNIST\\lenet-5_quant.json"
+            },
+            "settings": {
+              "kd_epochs": 0,
+              "kd_alpha": 0.0,
+              "kd_temperature": 0.0,
+              "kd_prune_ratio": null,
+              "prune_ratio": null,
+              "finetune_epochs": 0,
+              "quant_backend": "onednn",
+              "calib_mode": "dataset",
+              "calib_batches": 235
+            }
+          }
+        },
+        "prune": {
+          "model": {
+            "path": "models_\\MNIST\\lenet-5_prune.pt",
+            "exists": true,
+            "bytes": 173861
+          },
+          "state_dict": {
+            "path": "models_\\MNIST\\lenet-5_prune.pth",
+            "exists": true,
+            "bytes": 171813
+          },
+          "report": {
+            "dataset": "mnist",
+            "arch": "lenet-5",
+            "method": "prune",
+            "method_note": "torch-pruning structured channel pruning using L2 magnitude importance, followed by short fine-tuning.",
+            "source_checkpoint": "models_\\MNIST\\lenet-5.pth",
+            "baseline_accuracy": 0.9831,
+            "compressed_accuracy": 0.9849,
+            "accuracy_delta": 0.0018000000000000238,
+            "baseline_param_count": 61706,
+            "compressed_param_count": 41943,
+            "param_ratio": 0.6797232035782582,
+            "baseline_state_tensor_bytes": 246824,
+            "compressed_state_tensor_bytes": 167772,
+            "tensor_ratio": 0.6797232035782582,
+            "saved_model_bytes": 173861,
+            "saved_state_dict_bytes": 171813,
+            "file_ratio": 0.68587750148702,
+            "artifacts": {
+              "model": "models_\\MNIST\\lenet-5_prune.pt",
+              "state_dict": "models_\\MNIST\\lenet-5_prune.pth",
+              "report": "models_\\MNIST\\lenet-5_prune.json"
+            },
+            "settings": {
+              "kd_epochs": 0,
+              "kd_alpha": 0.0,
+              "kd_temperature": 0.0,
+              "kd_prune_ratio": null,
+              "prune_ratio": 0.3,
+              "finetune_epochs": 3,
+              "quant_backend": null,
+              "calib_mode": null,
+              "calib_batches": 0
+            }
+          }
+        }
+      },
+      "compression_summary": [
+        {
+          "dataset": "mnist",
+          "arch": "lenet-5",
+          "method": "kd",
+          "method_note": "Self-written Hinton-style knowledge distillation. MNIST uses compact student nets; CIFAR uses a structurally slimmed teacher initialized as the student, then fine-tunes with CE plus KL divergence.",
+          "source_checkpoint": "models_\\MNIST\\lenet-5.pth",
+          "baseline_accuracy": 0.9831,
+          "compressed_accuracy": 0.9584,
+          "accuracy_delta": -0.024699999999999944,
+          "baseline_param_count": 61706,
+          "compressed_param_count": 11986,
+          "param_ratio": 0.19424367160405795,
+          "baseline_state_tensor_bytes": 246824,
+          "compressed_state_tensor_bytes": 47944,
+          "tensor_ratio": 0.19424367160405795,
+          "saved_model_bytes": 54133,
+          "saved_state_dict_bytes": 52085,
+          "file_ratio": 0.20792332166338656,
+          "artifacts": {
+            "model": "models_\\MNIST\\lenet-5_kd.pt",
+            "state_dict": "models_\\MNIST\\lenet-5_kd.pth",
+            "report": "models_\\MNIST\\lenet-5_kd.json"
+          },
+          "settings": {
+            "kd_epochs": 4,
+            "kd_alpha": 0.7,
+            "kd_temperature": 4.0,
+            "kd_prune_ratio": null,
+            "prune_ratio": null,
+            "finetune_epochs": 0,
+            "quant_backend": null,
+            "calib_mode": null,
+            "calib_batches": 0
+          }
+        },
+        {
+          "dataset": "mnist",
+          "arch": "lenet-5",
+          "method": "quant",
+          "method_note": "PyTorch torch.ao FX graph mode post-training static quantization with calibration data.",
+          "source_checkpoint": "models_\\MNIST\\lenet-5.pth",
+          "baseline_accuracy": 0.9831,
+          "compressed_accuracy": 0.9826,
+          "accuracy_delta": -0.0004999999999999449,
+          "baseline_param_count": 61706,
+          "compressed_param_count": 0,
+          "param_ratio": 0.0,
+          "baseline_state_tensor_bytes": 246824,
+          "compressed_state_tensor_bytes": 2710,
+          "tensor_ratio": 0.010979483356561761,
+          "saved_model_bytes": 78857,
+          "saved_state_dict_bytes": 76135,
+          "file_ratio": 0.30393092243144737,
+          "artifacts": {
+            "model": "models_\\MNIST\\lenet-5_quant.pt",
+            "state_dict": "models_\\MNIST\\lenet-5_quant.pth",
+            "report": "models_\\MNIST\\lenet-5_quant.json"
+          },
+          "settings": {
+            "kd_epochs": 0,
+            "kd_alpha": 0.0,
+            "kd_temperature": 0.0,
+            "kd_prune_ratio": null,
+            "prune_ratio": null,
+            "finetune_epochs": 0,
+            "quant_backend": "onednn",
+            "calib_mode": "dataset",
+            "calib_batches": 235
+          }
+        },
+        {
+          "dataset": "mnist",
+          "arch": "lenet-5",
+          "method": "prune",
+          "method_note": "torch-pruning structured channel pruning using L2 magnitude importance, followed by short fine-tuning.",
+          "source_checkpoint": "models_\\MNIST\\lenet-5.pth",
+          "baseline_accuracy": 0.9831,
+          "compressed_accuracy": 0.9849,
+          "accuracy_delta": 0.0018000000000000238,
+          "baseline_param_count": 61706,
+          "compressed_param_count": 41943,
+          "param_ratio": 0.6797232035782582,
+          "baseline_state_tensor_bytes": 246824,
+          "compressed_state_tensor_bytes": 167772,
+          "tensor_ratio": 0.6797232035782582,
+          "saved_model_bytes": 173861,
+          "saved_state_dict_bytes": 171813,
+          "file_ratio": 0.68587750148702,
+          "artifacts": {
+            "model": "models_\\MNIST\\lenet-5_prune.pt",
+            "state_dict": "models_\\MNIST\\lenet-5_prune.pth",
+            "report": "models_\\MNIST\\lenet-5_prune.json"
+          },
+          "settings": {
+            "kd_epochs": 0,
+            "kd_alpha": 0.0,
+            "kd_temperature": 0.0,
+            "kd_prune_ratio": null,
+            "prune_ratio": 0.3,
+            "finetune_epochs": 3,
+            "quant_backend": null,
+            "calib_mode": null,
+            "calib_batches": 0
+          }
+        }
+      ]
+    },
+    "simplecnn": {
+      "original": {
+        "path": "models_\\MNIST\\simplecnn.pth",
+        "exists": true,
+        "bytes": 252397
+      },
+      "original_report": {
+        "dataset": "mnist",
+        "dataset_dir": "MNIST",
+        "arch": "simplecnn",
+        "artifact": "models_\\MNIST\\simplecnn.pth",
+        "epochs": 8,
+        "train_samples": 0,
+        "test_samples": 0,
+        "accuracy": 0.9919,
+        "param_count": 62346,
+        "state_tensor_bytes": 249384,
+        "saved_state_dict_bytes": 252397,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.31187340040206907,
+            "test_accuracy": 0.9766
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.07547536970774332,
+            "test_accuracy": 0.9818
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.053219064476092655,
+            "test_accuracy": 0.9862
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.041912551701068876,
+            "test_accuracy": 0.9869
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.035341932611664136,
+            "test_accuracy": 0.99
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.028515449690818786,
+            "test_accuracy": 0.9889
+          },
+          {
+            "epoch": 7,
+            "train_loss": 0.02501823282043139,
+            "test_accuracy": 0.9893
+          },
+          {
+            "epoch": 8,
+            "train_loss": 0.02289437596797943,
+            "test_accuracy": 0.9919
+          }
+        ]
+      },
+      "compressed": {
+        "kd": {
+          "model": {
+            "path": "models_\\MNIST\\simplecnn_kd.pt",
+            "exists": true,
+            "bytes": 28689
+          },
+          "state_dict": {
+            "path": "models_\\MNIST\\simplecnn_kd.pth",
+            "exists": true,
+            "bytes": 27025
+          },
+          "report": {
+            "dataset": "mnist",
+            "arch": "simplecnn",
+            "method": "kd",
+            "method_note": "Self-written Hinton-style knowledge distillation. MNIST uses compact student nets; CIFAR uses a structurally slimmed teacher initialized as the student, then fine-tunes with CE plus KL divergence.",
+            "source_checkpoint": "models_\\MNIST\\simplecnn.pth",
+            "baseline_accuracy": 0.9919,
+            "compressed_accuracy": 0.9784,
+            "accuracy_delta": -0.013499999999999956,
+            "baseline_param_count": 62346,
+            "compressed_param_count": 5994,
+            "param_ratio": 0.09614089115580791,
+            "baseline_state_tensor_bytes": 249384,
+            "compressed_state_tensor_bytes": 23976,
+            "tensor_ratio": 0.09614089115580791,
+            "saved_model_bytes": 28689,
+            "saved_state_dict_bytes": 27025,
+            "file_ratio": 0.107073380428452,
+            "artifacts": {
+              "model": "models_\\MNIST\\simplecnn_kd.pt",
+              "state_dict": "models_\\MNIST\\simplecnn_kd.pth",
+              "report": "models_\\MNIST\\simplecnn_kd.json"
+            },
+            "settings": {
+              "kd_epochs": 4,
+              "kd_alpha": 0.7,
+              "kd_temperature": 4.0,
+              "kd_prune_ratio": null,
+              "prune_ratio": null,
+              "finetune_epochs": 0,
+              "quant_backend": null,
+              "calib_mode": null,
+              "calib_batches": 0
+            }
+          }
+        },
+        "quant": {
+          "model": {
+            "path": "models_\\MNIST\\simplecnn_quant.pt",
+            "exists": true,
+            "bytes": 73881
+          },
+          "state_dict": {
+            "path": "models_\\MNIST\\simplecnn_quant.pth",
+            "exists": true,
+            "bytes": 71287
+          },
+          "report": {
+            "dataset": "mnist",
+            "arch": "simplecnn",
+            "method": "quant",
+            "method_note": "PyTorch torch.ao FX graph mode post-training static quantization with calibration data.",
+            "source_checkpoint": "models_\\MNIST\\simplecnn.pth",
+            "baseline_accuracy": 0.9919,
+            "compressed_accuracy": 0.9917,
+            "accuracy_delta": -0.00019999999999997797,
+            "baseline_param_count": 62346,
+            "compressed_param_count": 0,
+            "param_ratio": 0.0,
+            "baseline_state_tensor_bytes": 249384,
+            "compressed_state_tensor_bytes": 52432,
+            "tensor_ratio": 0.21024604625797966,
+            "saved_model_bytes": 73881,
+            "saved_state_dict_bytes": 71287,
+            "file_ratio": 0.2824399656097339,
+            "artifacts": {
+              "model": "models_\\MNIST\\simplecnn_quant.pt",
+              "state_dict": "models_\\MNIST\\simplecnn_quant.pth",
+              "report": "models_\\MNIST\\simplecnn_quant.json"
+            },
+            "settings": {
+              "kd_epochs": 0,
+              "kd_alpha": 0.0,
+              "kd_temperature": 0.0,
+              "kd_prune_ratio": null,
+              "prune_ratio": null,
+              "finetune_epochs": 0,
+              "quant_backend": "onednn",
+              "calib_mode": "dataset",
+              "calib_batches": 235
+            }
+          }
+        },
+        "prune": {
+          "model": {
+            "path": "models_\\MNIST\\simplecnn_prune.pt",
+            "exists": true,
+            "bytes": 132149
+          },
+          "state_dict": {
+            "path": "models_\\MNIST\\simplecnn_prune.pth",
+            "exists": true,
+            "bytes": 130485
+          },
+          "report": {
+            "dataset": "mnist",
+            "arch": "simplecnn",
+            "method": "prune",
+            "method_note": "torch-pruning structured channel pruning using L2 magnitude importance, followed by short fine-tuning.",
+            "source_checkpoint": "models_\\MNIST\\simplecnn.pth",
+            "baseline_accuracy": 0.9919,
+            "compressed_accuracy": 0.992,
+            "accuracy_delta": 9.999999999998899e-05,
+            "baseline_param_count": 62346,
+            "compressed_param_count": 31866,
+            "param_ratio": 0.5111153883168126,
+            "baseline_state_tensor_bytes": 249384,
+            "compressed_state_tensor_bytes": 127464,
+            "tensor_ratio": 0.5111153883168126,
+            "saved_model_bytes": 132149,
+            "saved_state_dict_bytes": 130485,
+            "file_ratio": 0.5169831654100484,
+            "artifacts": {
+              "model": "models_\\MNIST\\simplecnn_prune.pt",
+              "state_dict": "models_\\MNIST\\simplecnn_prune.pth",
+              "report": "models_\\MNIST\\simplecnn_prune.json"
+            },
+            "settings": {
+              "kd_epochs": 0,
+              "kd_alpha": 0.0,
+              "kd_temperature": 0.0,
+              "kd_prune_ratio": null,
+              "prune_ratio": 0.3,
+              "finetune_epochs": 3,
+              "quant_backend": null,
+              "calib_mode": null,
+              "calib_batches": 0
+            }
+          }
+        }
+      },
+      "compression_summary": [
+        {
+          "dataset": "mnist",
+          "arch": "simplecnn",
+          "method": "kd",
+          "method_note": "Self-written Hinton-style knowledge distillation. MNIST uses compact student nets; CIFAR uses a structurally slimmed teacher initialized as the student, then fine-tunes with CE plus KL divergence.",
+          "source_checkpoint": "models_\\MNIST\\simplecnn.pth",
+          "baseline_accuracy": 0.9919,
+          "compressed_accuracy": 0.9784,
+          "accuracy_delta": -0.013499999999999956,
+          "baseline_param_count": 62346,
+          "compressed_param_count": 5994,
+          "param_ratio": 0.09614089115580791,
+          "baseline_state_tensor_bytes": 249384,
+          "compressed_state_tensor_bytes": 23976,
+          "tensor_ratio": 0.09614089115580791,
+          "saved_model_bytes": 28689,
+          "saved_state_dict_bytes": 27025,
+          "file_ratio": 0.107073380428452,
+          "artifacts": {
+            "model": "models_\\MNIST\\simplecnn_kd.pt",
+            "state_dict": "models_\\MNIST\\simplecnn_kd.pth",
+            "report": "models_\\MNIST\\simplecnn_kd.json"
+          },
+          "settings": {
+            "kd_epochs": 4,
+            "kd_alpha": 0.7,
+            "kd_temperature": 4.0,
+            "kd_prune_ratio": null,
+            "prune_ratio": null,
+            "finetune_epochs": 0,
+            "quant_backend": null,
+            "calib_mode": null,
+            "calib_batches": 0
+          }
+        },
+        {
+          "dataset": "mnist",
+          "arch": "simplecnn",
+          "method": "quant",
+          "method_note": "PyTorch torch.ao FX graph mode post-training static quantization with calibration data.",
+          "source_checkpoint": "models_\\MNIST\\simplecnn.pth",
+          "baseline_accuracy": 0.9919,
+          "compressed_accuracy": 0.9917,
+          "accuracy_delta": -0.00019999999999997797,
+          "baseline_param_count": 62346,
+          "compressed_param_count": 0,
+          "param_ratio": 0.0,
+          "baseline_state_tensor_bytes": 249384,
+          "compressed_state_tensor_bytes": 52432,
+          "tensor_ratio": 0.21024604625797966,
+          "saved_model_bytes": 73881,
+          "saved_state_dict_bytes": 71287,
+          "file_ratio": 0.2824399656097339,
+          "artifacts": {
+            "model": "models_\\MNIST\\simplecnn_quant.pt",
+            "state_dict": "models_\\MNIST\\simplecnn_quant.pth",
+            "report": "models_\\MNIST\\simplecnn_quant.json"
+          },
+          "settings": {
+            "kd_epochs": 0,
+            "kd_alpha": 0.0,
+            "kd_temperature": 0.0,
+            "kd_prune_ratio": null,
+            "prune_ratio": null,
+            "finetune_epochs": 0,
+            "quant_backend": "onednn",
+            "calib_mode": "dataset",
+            "calib_batches": 235
+          }
+        },
+        {
+          "dataset": "mnist",
+          "arch": "simplecnn",
+          "method": "prune",
+          "method_note": "torch-pruning structured channel pruning using L2 magnitude importance, followed by short fine-tuning.",
+          "source_checkpoint": "models_\\MNIST\\simplecnn.pth",
+          "baseline_accuracy": 0.9919,
+          "compressed_accuracy": 0.992,
+          "accuracy_delta": 9.999999999998899e-05,
+          "baseline_param_count": 62346,
+          "compressed_param_count": 31866,
+          "param_ratio": 0.5111153883168126,
+          "baseline_state_tensor_bytes": 249384,
+          "compressed_state_tensor_bytes": 127464,
+          "tensor_ratio": 0.5111153883168126,
+          "saved_model_bytes": 132149,
+          "saved_state_dict_bytes": 130485,
+          "file_ratio": 0.5169831654100484,
+          "artifacts": {
+            "model": "models_\\MNIST\\simplecnn_prune.pt",
+            "state_dict": "models_\\MNIST\\simplecnn_prune.pth",
+            "report": "models_\\MNIST\\simplecnn_prune.json"
+          },
+          "settings": {
+            "kd_epochs": 0,
+            "kd_alpha": 0.0,
+            "kd_temperature": 0.0,
+            "kd_prune_ratio": null,
+            "prune_ratio": 0.3,
+            "finetune_epochs": 3,
+            "quant_backend": null,
+            "calib_mode": null,
+            "calib_batches": 0
+          }
+        }
+      ]
+    }
+  },
+  "gan": {
+    "root": "models_\\GAN\\MNIST",
+    "generator": {
+      "path": "models_\\GAN\\MNIST\\dcgan_netG_latest.pth",
+      "exists": false,
+      "bytes": 0
+    },
+    "manifest": null,
+    "fixed_samples": {
+      "path": "models_\\GAN\\MNIST\\dcgan_fixed_samples.pt",
+      "exists": false,
+      "bytes": 0
+    }
+  }
+}

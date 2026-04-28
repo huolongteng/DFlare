@@ -1,0 +1,35 @@
+{
+  "dataset": "fashion",
+  "arch": "resnet8",
+  "method": "prune",
+  "method_note": "torch-pruning structured channel pruning using L2 magnitude importance, followed by short fine-tuning.",
+  "source_checkpoint": "models_\\Fashion-MNIST\\resnet8.pth",
+  "baseline_accuracy": 0.8912,
+  "compressed_accuracy": 0.8874,
+  "accuracy_delta": -0.0038000000000000256,
+  "baseline_param_count": 77754,
+  "compressed_param_count": 37069,
+  "param_ratio": 0.4767471769941096,
+  "baseline_state_tensor_bytes": 313776,
+  "compressed_state_tensor_bytes": 150196,
+  "tensor_ratio": 0.47867268369792465,
+  "saved_model_bytes": 173935,
+  "saved_state_dict_bytes": 167791,
+  "file_ratio": 0.5065251057329763,
+  "artifacts": {
+    "model": "models_\\Fashion-MNIST\\resnet8_prune.pt",
+    "state_dict": "models_\\Fashion-MNIST\\resnet8_prune.pth",
+    "report": "models_\\Fashion-MNIST\\resnet8_prune.json"
+  },
+  "settings": {
+    "kd_epochs": 0,
+    "kd_alpha": 0.0,
+    "kd_temperature": 0.0,
+    "kd_prune_ratio": null,
+    "prune_ratio": 0.3,
+    "finetune_epochs": 3,
+    "quant_backend": null,
+    "calib_mode": null,
+    "calib_batches": 0
+  }
+}

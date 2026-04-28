@@ -1,0 +1,40 @@
+{
+  "dataset": "fashion",
+  "dataset_dir": "Fashion-MNIST",
+  "arch": "lenet-5",
+  "artifact": "models_\\Fashion-MNIST\\lenet-5.pth",
+  "epochs": 5,
+  "train_samples": 0,
+  "test_samples": 0,
+  "accuracy": 0.8429,
+  "param_count": 61706,
+  "state_tensor_bytes": 246824,
+  "saved_state_dict_bytes": 250501,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.9093005537668863,
+      "test_accuracy": 0.7517
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.5749067947387695,
+      "test_accuracy": 0.7847
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.5027263006528219,
+      "test_accuracy": 0.8193
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.45752717134157816,
+      "test_accuracy": 0.8218
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.41784756730397543,
+      "test_accuracy": 0.8429
+    }
+  ]
+}

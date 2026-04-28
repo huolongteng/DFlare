@@ -4,9 +4,9 @@
   "method": "quant",
   "method_note": "PyTorch torch.ao FX graph mode post-training static quantization with calibration data.",
   "source_checkpoint": "models_/MNIST/lenet-4.pth",
-  "baseline_accuracy": 0.9808,
-  "compressed_accuracy": 0.9815,
-  "accuracy_delta": 0.0007000000000000339,
+  "baseline_accuracy": 0.9811,
+  "compressed_accuracy": 0.9759,
+  "accuracy_delta": -0.005199999999999982,
   "baseline_param_count": 3246,
   "compressed_param_count": 0,
   "param_ratio": 0.0,
@@ -15,7 +15,7 @@
   "tensor_ratio": 0.10874922982131854,
   "saved_model_bytes": 12977,
   "saved_state_dict_bytes": 10371,
-  "file_ratio": 0.6551898414302861,
+  "file_ratio": 0.657849666983825,
   "artifacts": {
     "model": "models_\\MNIST\\lenet-4_quant.pt",
     "state_dict": "models_\\MNIST\\lenet-4_quant.pth",
@@ -25,10 +25,11 @@
     "kd_epochs": 0,
     "kd_alpha": 0.0,
     "kd_temperature": 0.0,
+    "kd_prune_ratio": null,
     "prune_ratio": null,
     "finetune_epochs": 0,
     "quant_backend": "onednn",
-    "calib_mode": "dataset",
-    "calib_batches": 16
+    "calib_mode": "noise",
+    "calib_batches": 32
   }
 }

@@ -31,6 +31,26 @@ MODEL_PATHS = {
             "prune": "./models_/MNIST/simplecnn_prune.pt",
         },
     },
+    "fashion": {
+        "lenet-5": {
+            "org": "./models_/Fashion-MNIST/lenet-5.pth",
+            "kd": "./models_/Fashion-MNIST/lenet-5_kd.pth",
+            "quant": "./models_/Fashion-MNIST/lenet-5_quant.pth",
+            "prune": "./models_/Fashion-MNIST/lenet-5_prune.pt",
+        },
+        "simplecnn": {
+            "org": "./models_/Fashion-MNIST/simplecnn.pth",
+            "kd": "./models_/Fashion-MNIST/simplecnn_kd.pth",
+            "quant": "./models_/Fashion-MNIST/simplecnn_quant.pth",
+            "prune": "./models_/Fashion-MNIST/simplecnn_prune.pt",
+        },
+        "resnet8": {
+            "org": "./models_/Fashion-MNIST/resnet8.pth",
+            "kd": "./models_/Fashion-MNIST/resnet8_kd.pth",
+            "quant": "./models_/Fashion-MNIST/resnet8_quant.pth",
+            "prune": "./models_/Fashion-MNIST/resnet8_prune.pt",
+        },
+    },
     "cifar": {
         "resnet20": {
             "org": "./models_/CIFAR-10/resnet20.pth",
@@ -64,6 +84,14 @@ def canonical_arch(dataset: str, arch: str) -> str:
             "simplecnn": "simplecnn",
             "cnn": "simplecnn",
         },
+        "fashion": {
+            "lenet5": "lenet-5",
+            "lenet-5": "lenet-5",
+            "simplecnn": "simplecnn",
+            "cnn": "simplecnn",
+            "resnet8": "resnet8",
+            "resnet-8": "resnet8",
+        },
         "cifar": {
             "resnet20": "resnet20",
             "plain20": "plainnet20",
@@ -81,6 +109,8 @@ class TorchvisionInputs:
     def __init__(self, dataset: str, data_dir: str, num: int, random_seed: int):
         if dataset == "mnist":
             self.dataset = datasets.MNIST(root=data_dir, train=False, download=True)
+        elif dataset == "fashion":
+            self.dataset = datasets.FashionMNIST(root=data_dir, train=False, download=True)
         elif dataset == "cifar":
             self.dataset = datasets.CIFAR10(root=data_dir, train=False, download=True)
         else:
@@ -219,6 +249,11 @@ def build_original_model(dataset: str, arch: str):
             "lenet-5": model_zoo.LeNet5,
             "simplecnn": model_zoo.SimpleCNN,
         },
+        "fashion": {
+            "lenet-5": model_zoo.LeNet5,
+            "simplecnn": model_zoo.SimpleCNN,
+            "resnet8": model_zoo.ResNet8Fashion,
+        },
         "cifar": {
             "resnet20": model_zoo.ResNet20,
             "plainnet20": model_zoo.PlainNet20,
@@ -230,6 +265,8 @@ def build_original_model(dataset: str, arch: str):
 
 def build_example_inputs(dataset: str):
     if dataset == "mnist":
+        return (torch.zeros(1, 1, 28, 28),)
+    if dataset == "fashion":
         return (torch.zeros(1, 1, 28, 28),)
     return (torch.zeros(1, 3, 32, 32),)
 
@@ -247,7 +284,18 @@ def build_quantized_model(dataset: str, arch: str, org_state):
 
 
 def infer_kd_model(dataset: str, state_dict):
-    if dataset == "mnist":
+    if dataset == "fashion" and "linear.weight" in state_dict:
+        blocks = infer_resnet_blocks(state_dict)
+        base_channels = state_dict["conv1.weight"].shape[0]
+        return model_zoo.ResNetStudent(
+            model_zoo.BasicBlock,
+            blocks,
+            base_channels=base_channels,
+            num_classes=state_dict["linear.weight"].shape[0],
+            in_channels=state_dict["conv1.weight"].shape[1],
+        )
+
+    if dataset in ("mnist", "fashion"):
         if "fc3.weight" in state_dict:
             return LeNet5Variant(
                 conv1_out=state_dict["conv1.weight"].shape[0],
@@ -269,11 +317,14 @@ def infer_kd_model(dataset: str, state_dict):
             has_shortcut = any(".shortcut." in key for key in state_dict)
             if base_channels < 16 and blocks == [1, 1, 1]:
                 if has_shortcut:
+                    in_channels = state_dict["conv1.weight"].shape[1]
                     return model_zoo.ResNetStudent(model_zoo.BasicBlock, blocks, base_channels=base_channels,
-                                                   num_classes=state_dict["linear.weight"].shape[0])
+                                                   num_classes=state_dict["linear.weight"].shape[0],
+                                                   in_channels=in_channels)
                 return model_zoo.PlainNetStudent(model_zoo.PlainBlock, blocks, base_channels=base_channels,
                                                  num_classes=state_dict["linear.weight"].shape[0])
-            return model_zoo.ResNet(model_zoo.BasicBlock, blocks, num_classes=state_dict["linear.weight"].shape[0])
+            return model_zoo.ResNet(model_zoo.BasicBlock, blocks, num_classes=state_dict["linear.weight"].shape[0],
+                                    in_channels=state_dict["conv1.weight"].shape[1])
         conv_keys = [k for k, v in state_dict.items() if k.startswith("features.") and k.endswith(".weight") and v.ndim == 4]
         if len(conv_keys) == 5:
             channels = [state_dict[key].shape[0] for key in conv_keys]
@@ -325,6 +376,10 @@ def preprocess_mnist(img: np.ndarray, device: torch.device):
     return tensor.to(device)
 
 
+def preprocess_fashion(img: np.ndarray, device: torch.device):
+    return preprocess_mnist(img, device)
+
+
 def preprocess_cifar(img: np.ndarray, device: torch.device):
     if img.ndim == 3 and img.shape[0] == 3 and img.shape[-1] != 3:
         img = np.transpose(img, (1, 2, 0))
@@ -346,7 +401,7 @@ def preprocess_generated_batch(dataset: str, images_np: np.ndarray, device: torc
         images_np = images_np[..., np.newaxis]
     tensor = torch.from_numpy(images_np).permute(0, 3, 1, 2).contiguous()
 
-    if dataset == "mnist":
+    if dataset in ("mnist", "fashion"):
         if tensor.shape[1] == 3:
             tensor = tensor[:, :1]
         return tensor.to(device)
@@ -359,7 +414,12 @@ def preprocess_generated_batch(dataset: str, images_np: np.ndarray, device: torc
 
 def create_predict_function(dataset: str, org_model: nn.Module, cps_model: nn.Module,
                             org_device: torch.device, cps_device: torch.device):
-    preprocess = preprocess_mnist if dataset == "mnist" else preprocess_cifar
+    preprocess_map = {
+        "mnist": preprocess_mnist,
+        "fashion": preprocess_fashion,
+        "cifar": preprocess_cifar,
+    }
+    preprocess = preprocess_map[dataset]
 
     def predict(input_img):
         org_tensor = preprocess(input_img, org_device)

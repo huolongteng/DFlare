@@ -10,6 +10,7 @@ from pathlib import Path
 
 DATASETS = {
     "mnist": ["lenet-4", "lenet-5", "simplecnn"],
+    "fashion": ["lenet-5", "simplecnn", "resnet8"],
     "cifar": ["plainnet20", "resnet20", "vgg16"],
 }
 CPS_TYPES = ["kd", "quant", "prune"]
@@ -41,8 +42,10 @@ def parse_args():
                         default="adopted-euclidean")
     parser.add_argument("--gan-adaptive-budget", action="store_true")
     parser.add_argument("--gan-budget-stages", type=str, default="8x2,16x4,32x8")
-    parser.add_argument("--datasets", type=str, default="mnist,cifar")
+    parser.add_argument("--datasets", type=str, default="fashion,cifar")
     parser.add_argument("--cps-types", type=str, default="kd,quant,prune")
+    parser.add_argument("--pairs", type=str, default="",
+                        help="Optional comma-separated dataset:arch:cps triples. Overrides --datasets/--cps-types.")
     parser.add_argument("--skip-existing", action="store_true")
     parser.add_argument("--methods", choices=["both", "dflare", "gan"], default="both")
     return parser.parse_args()
@@ -194,16 +197,31 @@ def main():
     output_root = Path(args.output_dir)
     output_root.mkdir(parents=True, exist_ok=True)
     seeds = [int(x.strip()) for x in args.seeds.split(",") if x.strip()]
-    datasets = [x.strip() for x in args.datasets.split(",") if x.strip()]
-    cps_types = [x.strip() for x in args.cps_types.split(",") if x.strip()]
+    if args.pairs:
+        pair_grid = []
+        for item in args.pairs.split(","):
+            item = item.strip()
+            if not item:
+                continue
+            parts = item.split(":")
+            if len(parts) != 3:
+                raise ValueError(f"Invalid --pairs item '{item}'. Use dataset:arch:cps.")
+            pair_grid.append(tuple(parts))
+    else:
+        datasets = [x.strip() for x in args.datasets.split(",") if x.strip()]
+        cps_types = [x.strip() for x in args.cps_types.split(",") if x.strip()]
+        pair_grid = [
+            (dataset, arch, cps_type)
+            for dataset in datasets
+            for arch in DATASETS[dataset]
+            for cps_type in cps_types
+        ]
 
     rows = []
     python = sys.executable
 
-    for dataset in datasets:
-        for arch in DATASETS[dataset]:
-            for cps_type in cps_types:
-                for seed in seeds:
+    for dataset, arch, cps_type in pair_grid:
+        for seed in seeds:
                     common = {
                         "dataset": dataset,
                         "arch": arch,

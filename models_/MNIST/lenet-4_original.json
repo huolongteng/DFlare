@@ -1,0 +1,55 @@
+{
+  "dataset": "mnist",
+  "dataset_dir": "MNIST",
+  "arch": "lenet-4",
+  "artifact": "models_\\MNIST\\lenet-4.pth",
+  "epochs": 8,
+  "train_samples": 0,
+  "test_samples": 0,
+  "accuracy": 0.9811,
+  "param_count": 3246,
+  "state_tensor_bytes": 12984,
+  "saved_state_dict_bytes": 15765,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.8041755318323771,
+      "test_accuracy": 0.914
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.22904832286834717,
+      "test_accuracy": 0.9497
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.14839794854323068,
+      "test_accuracy": 0.9648
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.11521427059173583,
+      "test_accuracy": 0.9714
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.09823134094079336,
+      "test_accuracy": 0.975
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.08840056229432423,
+      "test_accuracy": 0.977
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.08036019299825033,
+      "test_accuracy": 0.9774
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.07495825779438019,
+      "test_accuracy": 0.9811
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "dataset": "fashion",
+  "dataset_dir": "Fashion-MNIST",
+  "arch": "simplecnn",
+  "artifact": "models_\\Fashion-MNIST\\simplecnn.pth",
+  "epochs": 5,
+  "train_samples": 0,
+  "test_samples": 0,
+  "accuracy": 0.8826,
+  "param_count": 62346,
+  "state_tensor_bytes": 249384,
+  "saved_state_dict_bytes": 252397,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.6717768322308858,
+      "test_accuracy": 0.8288
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.4182885846455892,
+      "test_accuracy": 0.8595
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.3602402782122294,
+      "test_accuracy": 0.8695
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.32788074226379393,
+      "test_accuracy": 0.8758
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.305786154683431,
+      "test_accuracy": 0.8826
+    }
+  ]
+}

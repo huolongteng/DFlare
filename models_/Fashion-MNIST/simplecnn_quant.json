@@ -1,0 +1,35 @@
+{
+  "dataset": "fashion",
+  "arch": "simplecnn",
+  "method": "quant",
+  "method_note": "PyTorch torch.ao FX graph mode post-training static quantization with calibration data.",
+  "source_checkpoint": "models_\\Fashion-MNIST\\simplecnn.pth",
+  "baseline_accuracy": 0.8826,
+  "compressed_accuracy": 0.8815,
+  "accuracy_delta": -0.001100000000000101,
+  "baseline_param_count": 62346,
+  "compressed_param_count": 0,
+  "param_ratio": 0.0,
+  "baseline_state_tensor_bytes": 249384,
+  "compressed_state_tensor_bytes": 52432,
+  "tensor_ratio": 0.21024604625797966,
+  "saved_model_bytes": 73881,
+  "saved_state_dict_bytes": 71287,
+  "file_ratio": 0.2824399656097339,
+  "artifacts": {
+    "model": "models_\\Fashion-MNIST\\simplecnn_quant.pt",
+    "state_dict": "models_\\Fashion-MNIST\\simplecnn_quant.pth",
+    "report": "models_\\Fashion-MNIST\\simplecnn_quant.json"
+  },
+  "settings": {
+    "kd_epochs": 0,
+    "kd_alpha": 0.0,
+    "kd_temperature": 0.0,
+    "kd_prune_ratio": null,
+    "prune_ratio": null,
+    "finetune_epochs": 0,
+    "quant_backend": "onednn",
+    "calib_mode": "dataset",
+    "calib_batches": 16
+  }
+}

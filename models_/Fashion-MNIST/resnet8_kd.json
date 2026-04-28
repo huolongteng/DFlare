@@ -1,0 +1,35 @@
+{
+  "dataset": "fashion",
+  "arch": "resnet8",
+  "method": "kd",
+  "method_note": "Self-written Hinton-style knowledge distillation. MNIST uses compact student nets; CIFAR uses a structurally slimmed teacher initialized as the student, then fine-tunes with CE plus KL divergence.",
+  "source_checkpoint": "models_\\Fashion-MNIST\\resnet8.pth",
+  "baseline_accuracy": 0.8912,
+  "compressed_accuracy": 0.8512,
+  "accuracy_delta": -0.040000000000000036,
+  "baseline_param_count": 77754,
+  "compressed_param_count": 11284,
+  "param_ratio": 0.14512436659207242,
+  "baseline_state_tensor_bytes": 313776,
+  "compressed_state_tensor_bytes": 46216,
+  "tensor_ratio": 0.14728978634439854,
+  "saved_model_bytes": 69941,
+  "saved_state_dict_bytes": 63797,
+  "file_ratio": 0.19258948436117962,
+  "artifacts": {
+    "model": "models_\\Fashion-MNIST\\resnet8_kd.pt",
+    "state_dict": "models_\\Fashion-MNIST\\resnet8_kd.pth",
+    "report": "models_\\Fashion-MNIST\\resnet8_kd.json"
+  },
+  "settings": {
+    "kd_epochs": 4,
+    "kd_alpha": 0.7,
+    "kd_temperature": 4.0,
+    "kd_prune_ratio": null,
+    "prune_ratio": null,
+    "finetune_epochs": 0,
+    "quant_backend": null,
+    "calib_mode": null,
+    "calib_batches": 0
+  }
+}

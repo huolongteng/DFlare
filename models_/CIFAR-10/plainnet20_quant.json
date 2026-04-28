@@ -25,10 +25,11 @@
     "kd_epochs": 0,
     "kd_alpha": 0.0,
     "kd_temperature": 0.0,
+    "kd_prune_ratio": null,
     "prune_ratio": null,
     "finetune_epochs": 0,
     "quant_backend": "onednn",
     "calib_mode": "dataset",
-    "calib_batches": 16
+    "calib_batches": 196
   }
 }

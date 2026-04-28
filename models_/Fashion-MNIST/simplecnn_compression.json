@@ -1,0 +1,107 @@
+[
+  {
+    "dataset": "fashion",
+    "arch": "simplecnn",
+    "method": "kd",
+    "method_note": "Self-written Hinton-style knowledge distillation. MNIST uses compact student nets; CIFAR uses a structurally slimmed teacher initialized as the student, then fine-tunes with CE plus KL divergence.",
+    "source_checkpoint": "models_\\Fashion-MNIST\\simplecnn.pth",
+    "baseline_accuracy": 0.8826,
+    "compressed_accuracy": 0.8301,
+    "accuracy_delta": -0.0525000000000001,
+    "baseline_param_count": 62346,
+    "compressed_param_count": 5994,
+    "param_ratio": 0.09614089115580791,
+    "baseline_state_tensor_bytes": 249384,
+    "compressed_state_tensor_bytes": 23976,
+    "tensor_ratio": 0.09614089115580791,
+    "saved_model_bytes": 28689,
+    "saved_state_dict_bytes": 27025,
+    "file_ratio": 0.107073380428452,
+    "artifacts": {
+      "model": "models_\\Fashion-MNIST\\simplecnn_kd.pt",
+      "state_dict": "models_\\Fashion-MNIST\\simplecnn_kd.pth",
+      "report": "models_\\Fashion-MNIST\\simplecnn_kd.json"
+    },
+    "settings": {
+      "kd_epochs": 4,
+      "kd_alpha": 0.7,
+      "kd_temperature": 4.0,
+      "kd_prune_ratio": null,
+      "prune_ratio": null,
+      "finetune_epochs": 0,
+      "quant_backend": null,
+      "calib_mode": null,
+      "calib_batches": 0
+    }
+  },
+  {
+    "dataset": "fashion",
+    "arch": "simplecnn",
+    "method": "quant",
+    "method_note": "PyTorch torch.ao FX graph mode post-training static quantization with calibration data.",
+    "source_checkpoint": "models_\\Fashion-MNIST\\simplecnn.pth",
+    "baseline_accuracy": 0.8826,
+    "compressed_accuracy": 0.8815,
+    "accuracy_delta": -0.001100000000000101,
+    "baseline_param_count": 62346,
+    "compressed_param_count": 0,
+    "param_ratio": 0.0,
+    "baseline_state_tensor_bytes": 249384,
+    "compressed_state_tensor_bytes": 52432,
+    "tensor_ratio": 0.21024604625797966,
+    "saved_model_bytes": 73881,
+    "saved_state_dict_bytes": 71287,
+    "file_ratio": 0.2824399656097339,
+    "artifacts": {
+      "model": "models_\\Fashion-MNIST\\simplecnn_quant.pt",
+      "state_dict": "models_\\Fashion-MNIST\\simplecnn_quant.pth",
+      "report": "models_\\Fashion-MNIST\\simplecnn_quant.json"
+    },
+    "settings": {
+      "kd_epochs": 0,
+      "kd_alpha": 0.0,
+      "kd_temperature": 0.0,
+      "kd_prune_ratio": null,
+      "prune_ratio": null,
+      "finetune_epochs": 0,
+      "quant_backend": "onednn",
+      "calib_mode": "dataset",
+      "calib_batches": 16
+    }
+  },
+  {
+    "dataset": "fashion",
+    "arch": "simplecnn",
+    "method": "prune",
+    "method_note": "torch-pruning structured channel pruning using L2 magnitude importance, followed by short fine-tuning.",
+    "source_checkpoint": "models_\\Fashion-MNIST\\simplecnn.pth",
+    "baseline_accuracy": 0.8826,
+    "compressed_accuracy": 0.8888,
+    "accuracy_delta": 0.006199999999999983,
+    "baseline_param_count": 62346,
+    "compressed_param_count": 31866,
+    "param_ratio": 0.5111153883168126,
+    "baseline_state_tensor_bytes": 249384,
+    "compressed_state_tensor_bytes": 127464,
+    "tensor_ratio": 0.5111153883168126,
+    "saved_model_bytes": 132149,
+    "saved_state_dict_bytes": 130485,
+    "file_ratio": 0.5169831654100484,
+    "artifacts": {
+      "model": "models_\\Fashion-MNIST\\simplecnn_prune.pt",
+      "state_dict": "models_\\Fashion-MNIST\\simplecnn_prune.pth",
+      "report": "models_\\Fashion-MNIST\\simplecnn_prune.json"
+    },
+    "settings": {
+      "kd_epochs": 0,
+      "kd_alpha": 0.0,
+      "kd_temperature": 0.0,
+      "kd_prune_ratio": null,
+      "prune_ratio": 0.3,
+      "finetune_epochs": 3,
+      "quant_backend": null,
+      "calib_mode": null,
+      "calib_batches": 0
+    }
+  }
+]

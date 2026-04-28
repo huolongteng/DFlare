@@ -1,0 +1,55 @@
+{
+  "dataset": "mnist",
+  "dataset_dir": "MNIST",
+  "arch": "simplecnn",
+  "artifact": "models_\\MNIST\\simplecnn.pth",
+  "epochs": 8,
+  "train_samples": 0,
+  "test_samples": 0,
+  "accuracy": 0.9919,
+  "param_count": 62346,
+  "state_tensor_bytes": 249384,
+  "saved_state_dict_bytes": 252397,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.31187340040206907,
+      "test_accuracy": 0.9766
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.07547536970774332,
+      "test_accuracy": 0.9818
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.053219064476092655,
+      "test_accuracy": 0.9862
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.041912551701068876,
+      "test_accuracy": 0.9869
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.035341932611664136,
+      "test_accuracy": 0.99
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.028515449690818786,
+      "test_accuracy": 0.9889
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.02501823282043139,
+      "test_accuracy": 0.9893
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.02289437596797943,
+      "test_accuracy": 0.9919
+    }
+  ]
+}
