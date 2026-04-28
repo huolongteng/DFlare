@@ -10,3 +10,7 @@ CODEX_HANDOFF.md
 evaluate_compressed_models.py
 compression_eval/
 torch_compress_models.py
+
+models_/DIFFUSION/
+models_/GAN/
+_external/

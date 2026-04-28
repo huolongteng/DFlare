@@ -1,7 +1,3 @@
-import argparse
-import os
-import time
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -11,17 +7,7 @@ from torch.ao.quantization.quantize_fx import convert_fx, prepare_fx
 from torchvision import datasets
 
 import model_definitions as model_zoo
-import torch_model_utils as model_utils
-from myLib.Result import PredictResult, SingleAttackResult
-from myLib.fitnessValue import DiffProbFitnessValue, StateFitnessValue
-from myLib.img_mutations import get_img_mutations
-from myLib.probability_img_mutations import ProbabilityImgMutations, RandomImgMutations
-from myUtils import create_folder, myLogger
-from proj_utils import summary_attack_results
-from warning_utils import suppress_known_runtime_warnings
-
-
-suppress_known_runtime_warnings()
+from myLib.Result import PredictResult
 
 
 MODEL_PATHS = {
@@ -66,24 +52,6 @@ MODEL_PATHS = {
         },
     },
 }
-
-
-def parse_args():
-    parser = argparse.ArgumentParser("Local PyTorch DFlare runner for original + compressed models")
-    parser.add_argument("--dataset", choices=["mnist", "cifar"], required=True)
-    parser.add_argument("--arch", required=True,
-                        help="mnist: lenet-4, lenet-5, simplecnn; cifar: resnet20, plainnet20, vgg16")
-    parser.add_argument("--cps-type", choices=["kd", "quant", "prune"], default="kd")
-    parser.add_argument("--maxit", type=int, default=100)
-    parser.add_argument("--num", type=int, default=100)
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--output-dir", type=str, default="./results_torch")
-    parser.add_argument("--attack-mode", type=str, default="a", choices=["a", "b", "c", "d"])
-    parser.add_argument("--timeout", type=int, default=240, help="timeout for each seed input in seconds")
-    parser.add_argument("--device", type=str, default="auto", choices=["auto", "cpu", "cuda"])
-    parser.add_argument("--data-dir", type=str, default="./data")
-    parser.add_argument("--coverage-threshold", type=float, default=0.50)
-    return parser.parse_args()
 
 
 def canonical_arch(dataset: str, arch: str) -> str:
@@ -161,26 +129,6 @@ class TorchvisionInputs:
     @property
     def len(self):
         return len(self.indices)
-
-
-class ExactCoveredStates:
-    def __init__(self, threshold=0.50):
-        self.threshold = threshold
-        self.corpus = []
-
-    def update_function(self, element):
-        element = np.asarray(element, dtype=np.float32).ravel()
-        if len(self.corpus) == 0:
-            self.corpus.append(element)
-            return True, 100.0
-
-        lookup = np.vstack(self.corpus)
-        distances = np.sum(np.square(lookup - element), axis=1)
-        nearest_distance = float(np.min(distances))
-        if nearest_distance > self.threshold:
-            self.corpus.append(element)
-            return True, nearest_distance
-        return False, nearest_distance
 
 
 class TwoConvClassifier(nn.Module):
@@ -387,6 +335,28 @@ def preprocess_cifar(img: np.ndarray, device: torch.device):
     return tensor.to(device)
 
 
+def preprocess_generated_batch(dataset: str, images_np: np.ndarray, device: torch.device):
+    images_np = np.asarray(images_np)
+    if images_np.dtype != np.float32:
+        images_np = images_np.astype(np.float32)
+    if images_np.max() > 1.0:
+        images_np = images_np / 255.0
+
+    if images_np.ndim == 3:
+        images_np = images_np[..., np.newaxis]
+    tensor = torch.from_numpy(images_np).permute(0, 3, 1, 2).contiguous()
+
+    if dataset == "mnist":
+        if tensor.shape[1] == 3:
+            tensor = tensor[:, :1]
+        return tensor.to(device)
+
+    mean = torch.tensor([0.4914, 0.4822, 0.4465], dtype=tensor.dtype).view(1, 3, 1, 1)
+    std = torch.tensor([0.2023, 0.1994, 0.2010], dtype=tensor.dtype).view(1, 3, 1, 1)
+    tensor = (tensor - mean) / std
+    return tensor.to(device)
+
+
 def create_predict_function(dataset: str, org_model: nn.Module, cps_model: nn.Module,
                             org_device: torch.device, cps_device: torch.device):
     preprocess = preprocess_mnist if dataset == "mnist" else preprocess_cifar
@@ -402,122 +372,11 @@ def create_predict_function(dataset: str, org_model: nn.Module, cps_model: nn.Mo
     return predict
 
 
-def run_attack(args, inputs_set, logger, save_dir, predict_f):
-    overall_start_time = time.time()
-    number_of_data = min(inputs_set.len, args.num)
-    success_iter = np.ones([number_of_data]) * -1
-    seed_times = np.zeros([number_of_data])
-
-    for idx in range(number_of_data):
-        seed_file = inputs_set[idx]
-        raw_seed_input = seed_file["img"]
-        seed_label = seed_file["label"]
-
-        logger("Img idx {} label {}".format(idx, seed_label))
-
-        if args.attack_mode in ("a", "b", "d"):
-            covered_states = ExactCoveredStates(threshold=args.coverage_threshold)
-        elif args.attack_mode != "c":
-            raise NotImplementedError
-
-        mutation = get_img_mutations()
-        if args.attack_mode in ("a", "c", "d"):
-            p_mutation = ProbabilityImgMutations(mutation, args.seed)
-        elif args.attack_mode == "b":
-            p_mutation = RandomImgMutations(mutation, args.seed)
-        else:
-            raise NotImplementedError
-
-        seed_org_result, seed_cps_result = predict_f(raw_seed_input)
-        result = SingleAttackResult(raw_seed_input, seed_label, idx, seed_org_result, seed_cps_result, save_dir)
-        start_time = time.time()
-
-        if seed_org_result.label != seed_cps_result.label:
-            logger("No need to search: org: {} vs cps: {}".format(seed_org_result.label, seed_cps_result.label))
-            success_iter[idx] = 0
-            result.update_results(None, seed_org_result, seed_cps_result, 0)
-        else:
-            if args.attack_mode in ("a", "b", "d"):
-                covered_states.update_function(np.hstack([seed_org_result.vec, seed_cps_result.vec]))
-                best_fitness_value = StateFitnessValue(False, 0)
-            else:
-                best_fitness_value = DiffProbFitnessValue(-1)
-
-            latest_img = np.copy(raw_seed_input)
-            last_mutation_operator = None
-
-            for iteration in range(1, args.maxit + 1):
-                logger("Iteration {}".format(iteration))
-                if time.time() - start_time > args.timeout:
-                    logger("Time Out")
-                    break
-
-                m = p_mutation.choose_mutator(last_mutation_operator)
-                m.total += 1
-                logger("Mutator :{}".format(m.name))
-                new_img = m.mut(np.copy(latest_img))
-
-                org_result, cps_result = predict_f(new_img)
-                if org_result.label != cps_result.label:
-                    logger("Found: org: {} vs cps: {}".format(org_result.label, cps_result.label))
-                    success_iter[idx] = iteration
-                    m.delta_bigger_than_zero += 1
-                    result.update_results(new_img, org_result, cps_result, iteration)
-                    break
-
-                diff_prob = org_result.prob[0] - cps_result.prob[0]
-                if args.attack_mode in ("a", "b", "d"):
-                    coverage = np.hstack([org_result.vec, cps_result.vec])
-                    add_to_corpus, distance = covered_states.update_function(coverage)
-                    fitness_value = StateFitnessValue(add_to_corpus, diff_prob)
-                else:
-                    fitness_value = DiffProbFitnessValue(diff_prob)
-
-                if fitness_value.better_than(best_fitness_value):
-                    best_fitness_value = fitness_value
-                    m.delta_bigger_than_zero += 1
-                    latest_img = np.copy(new_img)
-                    last_mutation_operator = m.name
-                    logger("update fitness value to {}".format(best_fitness_value))
-
-                logger("Best " + str(best_fitness_value))
-
-        result.save()
-        seed_times[idx] = time.time() - start_time
-
-    total_runtime = time.time() - overall_start_time
-    summary_attack_results(success_iter, logger, args.attack_mode, seed_times=seed_times, total_runtime=total_runtime)
-
-
-def main():
-    args = parse_args()
-    args.arch = model_utils.canonical_arch(args.dataset, args.arch)
-
-    if args.device == "auto":
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    else:
-        device = torch.device(args.device)
-
-    output_name = "{}_{}_{}_{}".format(args.arch, args.cps_type, args.seed, args.attack_mode)
-    save_dir = os.path.join(args.output_dir, f"{args.dataset}-torch", output_name)
-    create_folder(save_dir)
-
-    log_path = os.path.join(args.output_dir, f"{args.dataset}-torch", f"{output_name}.log")
-    logger = myLogger.create_logger(log_path)
-    logger(args)
-    logger("Load models")
-
-    org_model, cps_model, org_device, cps_device = model_utils.load_models(args.dataset, args.arch, args.cps_type, device)
-    logger(f"Using org device {org_device}; compressed model device {cps_device}")
-    predict_f = model_utils.create_predict_function(args.dataset, org_model, cps_model, org_device, cps_device)
-
-    logger("Load dataset")
-    inputs_set = model_utils.TorchvisionInputs(args.dataset, args.data_dir, num=args.num, random_seed=args.seed)
-
-    logger("Start the attack")
-    print("Start the attack")
-    run_attack(args, inputs_set, logger, save_dir, predict_f)
-
-
-if __name__ == "__main__":
-    main()
+def predict_batch(dataset: str, images_np: np.ndarray, org_model, cps_model,
+                  org_device: torch.device, cps_device: torch.device):
+    org_tensor = preprocess_generated_batch(dataset, images_np, org_device)
+    cps_tensor = org_tensor if cps_device == org_device else preprocess_generated_batch(dataset, images_np, cps_device)
+    with torch.inference_mode():
+        org_logits = org_model(org_tensor).detach().cpu()
+        cps_logits = cps_model(cps_tensor).detach().cpu()
+    return org_logits, cps_logits
